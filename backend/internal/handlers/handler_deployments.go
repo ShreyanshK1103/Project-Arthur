@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
+	models "github.com/ShreyanshK1103/Project-Arthur/backend/internal/models"
 	"github.com/google/uuid"
 )
 
@@ -40,5 +41,5 @@ func (cfg *Config) HandlerCreateDeployment(w http.ResponseWriter, r *http.Reques
 		respondWithError(w, 400, fmt.Sprintf("Couldn't Get Jobs: %v", err))
 		return
 	}
-	respondWithJSON(w, 201, jobs)
+	respondWithJSON(w, 201, models.DeploymentToResponse(jobs))
 }
