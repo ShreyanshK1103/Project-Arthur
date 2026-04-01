@@ -37,8 +37,10 @@ func main () {
 	v1Router := chi.NewRouter()
 
 	v1Router.Get("/healthz", handlers.HandlerReadiness)
-	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
 	v1Router.Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
+
+	
+	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
 
 	router.Mount("/v1", v1Router)
 
