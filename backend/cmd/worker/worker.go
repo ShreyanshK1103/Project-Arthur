@@ -15,13 +15,15 @@ import (
 )
 
 func processDeployment(job database.Deployment, db *database.Queries) error {
+	// -----------------TEMP FOLDER CREATION FOR THE DEPLOYMENT ----------------------
 	projectPath := "/tmp/project-arthur/" + job.ID.String()
-	defer os.RemoveAll(projectPath)
 
 	err := os.MkdirAll(projectPath, 0755)
 	if err != nil {
 		return err
 	}
+
+	// --------------------------CLONING THE REPO ---------------------------------------
 
 	log.Printf("Cloning repo: %s", job.RepoUrl)
 
@@ -43,6 +45,8 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	log.Println("Clone Successfull")
 
+	// ------------------------- INSTALLING THE PROJECT DEPENDENCIES --------------------------------
+
 	log.Println("Installing dependencies.....")
 
 	cmd = exec.Command("npm", "install")
@@ -58,6 +62,8 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		)
 	}
 	log.Println("Dependencies installed")
+
+	// -------------------------BUILDING THE PROJECT -----------------------------
 
 	log.Println("Building project.....")
 
@@ -75,6 +81,8 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	log.Println("Build Successful")
 
+	//----------------------------- VERIFYING THE BUILD -------------------------------
+
 	distPath := filepath.Join(projectPath, "dist")
 
 	_, err = os.Stat(distPath)
@@ -82,6 +90,68 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		return fmt.Errorf("Dist folder not found")
 	}
 
+	// ------------------- COPYING THE DIST ARTIFACT -----------------------------------------
+
+	storageBasePath := "./storage/deployments"
+
+	err = os.MkdirAll(storageBasePath, 0755)
+	if err != nil {
+		return err
+	}
+
+	deploymentStoragePath := filepath.Join(
+		storageBasePath,
+		job.ID.String(),
+	)
+
+	err = os.MkdirAll(deploymentStoragePath, 0755)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Copying build artifacts....")
+
+	cmd = exec.Command(
+		"cp",
+		"-r",
+		distPath+"/.",
+		deploymentStoragePath,
+	)
+
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf(
+			"copy failed: %v\n%s",
+			err, 
+			string(output),
+		)
+	}
+
+	// ------------------ VERIFYING THE DIST COPY --------------------------------------
+
+	files, err := os.ReadDir(deploymentStoragePath)
+	if err != nil {
+		return err
+	}
+
+	if len(files) == 0 {
+		return fmt.Errorf("no artifacts copied")
+	}
+
+	log.Println("Stored artifacts:")
+
+	for _, file := range files {
+		log.Println(file.Name())
+	}
+	// ------------------------------------ REMOVING THE TEMP FILES ----------------------------------------------
+	err = os.RemoveAll(projectPath)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Storage path: %s", storageBasePath)
+
+	// -----------------------------MARKING SUCCESS OF THE PROJECT DEPLOYMENT --------------------------------
 	err = db.MarkDeploymentSuccess(
 		context.Background(),
 		database.MarkDeploymentSuccessParams{
