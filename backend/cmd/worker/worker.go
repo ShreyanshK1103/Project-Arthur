@@ -46,7 +46,10 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		addLog(
 			db,
 			job.ID,
-			"Cloning Failed",
+			fmt.Sprintf(
+				"Cloning Failed:\n%s",
+				string(output),
+			),
 		)
 		return fmt.Errorf(
 			"git clone failed: %v\n%s",
@@ -55,11 +58,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		)
 	}
 
-	log.Println("Clone Successfull")
+	log.Println("Clone Successful")
 	addLog(
 		db,
 		job.ID,
-		"Cloning Completed.....",
+		"Cloning Successful.....",
 	)
 
 	// ------------------------- INSTALLING THE PROJECT DEPENDENCIES --------------------------------
@@ -80,7 +83,10 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		addLog(
 			db,
 			job.ID,
-			"npm failed",
+			fmt.Sprintf(
+				"Npm Install Failed:\n%s",
+				string(output),
+			),
 		)
 		return fmt.Errorf(
 			"npm install failed: %v\n%s",
@@ -112,7 +118,10 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		addLog(
 			db,
 			job.ID,
-			"Build Failed",
+			fmt.Sprintf(
+				"Build Failed:\n%s",
+				string(output),
+			),
 		)
 		return fmt.Errorf(
 			"build failed: %v\n%s",
@@ -125,7 +134,7 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	addLog(
 		db,
 		job.ID,
-		"Build Successfull.......",
+		"Build Successful.......",
 	)
 
 	//----------------------------- VERIFYING THE BUILD -------------------------------
@@ -180,7 +189,10 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		addLog(
 			db,
 			job.ID,
-			"Artifacts failed to copy",
+			fmt.Sprintf(
+				"Copy Failed:\n%s",
+				string(output),
+			),
 		)
 		return fmt.Errorf(
 			"copy failed: %v\n%s",
@@ -200,7 +212,10 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		addLog(
 			db,
 			job.ID,
-			"No Artifacts copied",
+			fmt.Sprintf(
+				"Artifacts Failed To Copy:\n%s",
+				string(output),
+			),
 		)
 		return fmt.Errorf("no artifacts copied")
 	}
