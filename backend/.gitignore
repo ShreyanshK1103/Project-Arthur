@@ -45,6 +45,7 @@ Thumbs.db
 # -----------------------------
 tmp/
 temp/
+storage/
 
 # -----------------------------
 # DATABASE / LOCAL FILES
