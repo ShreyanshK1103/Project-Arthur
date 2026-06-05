@@ -152,12 +152,17 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	log.Printf("Storage path: %s", storageBasePath)
 
 	// -----------------------------MARKING SUCCESS OF THE PROJECT DEPLOYMENT --------------------------------
+
+	deploymentURL := fmt.Sprintf(
+		"http://%s.localhost:8080",
+		job.ID.String(),
+	)
 	err = db.MarkDeploymentSuccess(
 		context.Background(),
 		database.MarkDeploymentSuccessParams{
 			ID: job.ID,
 			Url: sql.NullString{
-				String: "https://success.local",
+				String: deploymentURL,
 				Valid: true,
 			},
 		},
