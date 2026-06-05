@@ -32,3 +32,9 @@ UPDATE deployments
 SET status = 'failed',
     updated_at = NOW()
 WHERE id = $1;
+
+-- name: GetDeploymentByPrefix :one
+SELECT *
+FROM deployments
+WHERE id::text LIKE $1 || '%'
+LIMIT 1;

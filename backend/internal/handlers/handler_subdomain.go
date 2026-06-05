@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,14 +18,30 @@ func (cfg *Config) HandlerServeByDomain (w http.ResponseWriter, r *http.Request)
 
 	host = strings.Split(host, ":")[0]
 
-	deploymentID := strings.Split(host, ".")[0]
+	slug := strings.Split(host, ".")[0]
+
+	deployment, err := cfg.DB.GetDeploymentByPrefix(
+		r.Context(),
+		sql.NullString{
+			String: slug,
+			Valid: true,
+		},
+	)
+	if err != nil {
+		http.Error(
+			w,
+			"deployment not found",
+			http.StatusNotFound,
+		)
+		return
+	}
 
 	deploymentPath := filepath.Join(
 		"./storage/deployments",
-		deploymentID,
+		deployment.ID.String(),
 	)
 
-	_, err := os.Stat(deploymentPath)
+	_, err = os.Stat(deploymentPath)
 	if err != nil {
 		http.Error(
 			w,

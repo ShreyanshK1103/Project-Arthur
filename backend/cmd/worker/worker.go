@@ -153,9 +153,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	// -----------------------------MARKING SUCCESS OF THE PROJECT DEPLOYMENT --------------------------------
 
+	slug := job.ID.String()[:12]
+
 	deploymentURL := fmt.Sprintf(
 		"http://%s.localhost:8080",
-		job.ID.String(),
+		slug,
 	)
 	err = db.MarkDeploymentSuccess(
 		context.Background(),

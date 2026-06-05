@@ -59,6 +59,28 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 	return i, err
 }
 
+const getDeploymentByPrefix = `-- name: GetDeploymentByPrefix :one
+SELECT id, project_id, status, repo_url, url, created_at, updated_at
+FROM deployments
+WHERE id::text LIKE $1 || '%'
+LIMIT 1
+`
+
+func (q *Queries) GetDeploymentByPrefix(ctx context.Context, dollar_1 sql.NullString) (Deployment, error) {
+	row := q.db.QueryRowContext(ctx, getDeploymentByPrefix, dollar_1)
+	var i Deployment
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Status,
+		&i.RepoUrl,
+		&i.Url,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getNextDeployment = `-- name: GetNextDeployment :one
 UPDATE deployments
 SET status = 'building',
