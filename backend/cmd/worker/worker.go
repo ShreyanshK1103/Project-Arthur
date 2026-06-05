@@ -12,6 +12,7 @@ import (
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
+	"github.com/google/uuid"
 )
 
 func processDeployment(job database.Deployment, db *database.Queries) error {
@@ -25,6 +26,12 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	// --------------------------CLONING THE REPO ---------------------------------------
 
+	addLog(
+		db,
+		job.ID,
+		"Cloning repository.....",
+	)
+
 	log.Printf("Cloning repo: %s", job.RepoUrl)
 
 	cmd := exec.Command(
@@ -36,6 +43,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		addLog(
+			db,
+			job.ID,
+			"Cloning Failed",
+		)
 		return fmt.Errorf(
 			"git clone failed: %v\n%s",
 			err, 
@@ -44,10 +56,20 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	}
 
 	log.Println("Clone Successfull")
+	addLog(
+		db,
+		job.ID,
+		"Cloning Completed.....",
+	)
 
 	// ------------------------- INSTALLING THE PROJECT DEPENDENCIES --------------------------------
 
 	log.Println("Installing dependencies.....")
+	addLog(
+		db,
+		job.ID,
+		"Installing Dependencies.......",
+	)
 
 	cmd = exec.Command("npm", "install")
 	cmd.Dir = projectPath
@@ -55,6 +77,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	output, err = cmd.CombinedOutput()
 
 	if err != nil {
+		addLog(
+			db,
+			job.ID,
+			"npm failed",
+		)
 		return fmt.Errorf(
 			"npm install failed: %v\n%s",
 			err, 
@@ -62,16 +89,31 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		)
 	}
 	log.Println("Dependencies installed")
+	addLog(
+		db,
+		job.ID,
+		"Dependencies Installed.....",
+	)
 
 	// -------------------------BUILDING THE PROJECT -----------------------------
 
 	log.Println("Building project.....")
+	addLog(
+		db,
+		job.ID,
+		"Building the Project.......",
+	)
 
 	cmd = exec.Command("npm", "run", "build")
 	cmd.Dir = projectPath
 	output, err = cmd.CombinedOutput()
 
 	if err != nil {
+		addLog(
+			db,
+			job.ID,
+			"Build Failed",
+		)
 		return fmt.Errorf(
 			"build failed: %v\n%s",
 			err,
@@ -80,6 +122,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	}
 
 	log.Println("Build Successful")
+	addLog(
+		db,
+		job.ID,
+		"Build Successfull.......",
+	)
 
 	//----------------------------- VERIFYING THE BUILD -------------------------------
 
@@ -87,6 +134,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	_, err = os.Stat(distPath)
 	if err != nil {
+		addLog(
+			db,
+			job.ID,
+			"No Dist Found",
+		)
 		return fmt.Errorf("Dist folder not found")
 	}
 
@@ -110,6 +162,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	}
 
 	log.Println("Copying build artifacts....")
+	addLog(
+		db,
+		job.ID,
+		"Copying Build Artifacts.....",
+	)
 
 	cmd = exec.Command(
 		"cp",
@@ -120,6 +177,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	output, err = cmd.CombinedOutput()
 	if err != nil {
+		addLog(
+			db,
+			job.ID,
+			"Artifacts failed to copy",
+		)
 		return fmt.Errorf(
 			"copy failed: %v\n%s",
 			err, 
@@ -139,6 +201,12 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	}
 
 	log.Println("Stored artifacts:")
+
+	addLog(
+		db,
+		job.ID,
+		"Artifacts Copied Successfully",
+	)
 
 	for _, file := range files {
 		log.Println(file.Name())
@@ -170,11 +238,32 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		},
 	)
 	if err != nil {
+		addLog(
+			db,
+			job.ID,
+			"Failed to Deploy",
+		)
 		return err
 	}
 
+	addLog(
+		db,
+		job.ID,
+		"Deployment Successful",
+	)
+
 
 	return nil
+}
+
+func addLog(db *database.Queries, deploymentID uuid.UUID, message string) {
+	db.CreateDeploymentLog(
+		context.Background(),
+		database.CreateDeploymentLogParams{
+			DeploymentID: deploymentID,
+			Log: message,
+		},
+	)
 }
 
 func main () {

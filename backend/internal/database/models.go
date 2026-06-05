@@ -21,6 +21,13 @@ type Deployment struct {
 	UpdatedAt time.Time
 }
 
+type DeploymentLog struct {
+	ID           uuid.UUID
+	DeploymentID uuid.UUID
+	Log          string
+	CreatedAt    time.Time
+}
+
 type Project struct {
 	ID        uuid.UUID
 	Name      string
