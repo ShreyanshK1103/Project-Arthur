@@ -37,12 +37,15 @@ func main () {
 	v1Router := chi.NewRouter()
 
 	v1Router.Get("/healthz", handlers.HandlerReadiness)
-	v1Router.Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
+	v1Router.Get("/deployments/{id}", apiCfg.HandlerServeDeployment)
 
+	v1Router.Handle("/deployments/{id}/*", http.HandlerFunc(apiCfg.HandlerServeDeployment))
 	
 	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
 
 	router.Mount("/v1", v1Router)
+
+	router.Handle("/*", http.HandlerFunc(apiCfg.HandlerServeByDomain))
 
 	srv := &http.Server{
 		Handler : router,
