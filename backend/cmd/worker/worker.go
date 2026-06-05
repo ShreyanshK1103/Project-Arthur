@@ -197,6 +197,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	}
 
 	if len(files) == 0 {
+		addLog(
+			db,
+			job.ID,
+			"No Artifacts copied",
+		)
 		return fmt.Errorf("no artifacts copied")
 	}
 
@@ -257,13 +262,17 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 }
 
 func addLog(db *database.Queries, deploymentID uuid.UUID, message string) {
-	db.CreateDeploymentLog(
+	err := db.CreateDeploymentLog(
 		context.Background(),
 		database.CreateDeploymentLogParams{
 			DeploymentID: deploymentID,
 			Log: message,
 		},
 	)
+
+	if err != nil {
+		log.Printf("failed to write log: %v", err)
+	}
 }
 
 func main () {

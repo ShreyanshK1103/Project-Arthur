@@ -32,6 +32,10 @@ type Deployments struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type DeploymentLogsResponse struct {
+	Logs []string  `json:"logs"`
+}
+
 func DeploymentToResponse(d database.Deployment) Deployments {
 	var url *string
 	if d.Url.Valid {
@@ -47,4 +51,14 @@ func DeploymentToResponse(d database.Deployment) Deployments {
 		CreatedAt: d.CreatedAt,
 		UpdatedAt: d.UpdatedAt,
 	}
+}
+
+func DeploymentLogsToStrings(logs []database.DeploymentLog) []string {
+	result := []string{}
+
+	for _, l := range logs {
+		result = append(result, l.Log)
+	}
+
+	return result
 }
