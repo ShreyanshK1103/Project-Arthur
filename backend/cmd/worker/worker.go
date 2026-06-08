@@ -74,8 +74,16 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		"Installing Dependencies.......",
 	)
 
-	cmd = exec.Command("npm", "install")
-	cmd.Dir = projectPath
+	cmd = exec.Command(
+		"docker",
+		"run",
+		"--rm",
+		"-v", projectPath+":/app",
+		"-w", "/app",
+		"node:24",
+		"npm",
+		"install",
+	)
 
 	output, err = cmd.CombinedOutput()
 
@@ -110,8 +118,17 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		"Building the Project.......",
 	)
 
-	cmd = exec.Command("npm", "run", "build")
-	cmd.Dir = projectPath
+	cmd = exec.Command(
+		"docker",
+		"run",
+		"--rm",
+		"-v", projectPath+":/app",
+		"-w", "/app",
+		"node:24",
+		"npm",
+		"run",
+		"build",
+	)
 	output, err = cmd.CombinedOutput()
 
 	if err != nil {
