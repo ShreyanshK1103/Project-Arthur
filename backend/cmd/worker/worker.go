@@ -12,6 +12,7 @@ import (
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -245,6 +246,39 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		"Artifacts Copied Successfully",
 	)
 
+	// --------------------UPLOADING TO S3---------------------
+
+	addLog(
+		db,
+		job.ID,
+		"Uploading Artifacts To S3",
+	)
+
+	err = storage.UploadDirectory(
+		job.ID.String(),
+		deploymentStoragePath,
+	)
+
+	if err != nil {
+		addLog(
+			db,
+			job.ID,
+			fmt.Sprintf(
+				"S3 Upload Failed : \n%v",
+				err,
+			),
+		)
+		return err
+	}
+
+	addLog(
+		db,
+		job.ID,
+		"Artifacts Uploaded To S3 Successfully",
+	)
+
+	//------------------------- LOGGING THE FILES UPLOADED -------------------
+	
 	for _, file := range files {
 		log.Println(file.Name())
 	}
