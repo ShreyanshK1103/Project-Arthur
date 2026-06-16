@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"database/sql"
+	"io"
+	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
+
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/storage"
 )
 
 func (cfg *Config) HandlerServeByDomain (w http.ResponseWriter, r *http.Request) {
@@ -36,24 +38,63 @@ func (cfg *Config) HandlerServeByDomain (w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	deploymentPath := filepath.Join(
-		"./storage/deployments",
-		deployment.ID.String(),
-	)
+	// deploymentPath := filepath.Join(
+	// 	"./storage/deployments",
+	// 	deployment.ID.String(),
+	// )
 
-	_, err = os.Stat(deploymentPath)
+	// _, err = os.Stat(deploymentPath)
+	// if err != nil {
+	// 	http.Error(
+	// 		w,
+	// 		"deployment not found",
+	// 		http.StatusNotFound,
+	// 	)
+	// 	return 
+	// }
+
+	// fs := http.FileServer(
+	// 	http.Dir(deploymentPath),
+	// )
+
+	// fs.ServeHTTP(w, r)
+
+	obj, err := storage.GetDeploymentFile(
+		deployment.ID.String(),
+		r.URL.Path,
+	)
 	if err != nil {
 		http.Error(
 			w,
-			"deployment not found",
+			"file not found",
 			http.StatusNotFound,
 		)
-		return 
+		return
 	}
 
-	fs := http.FileServer(
-		http.Dir(deploymentPath),
+	defer obj.Body.Close()
+
+	if obj.ContentType != nil {
+		w.Header().Set(
+			"Content-Type",
+			*obj.ContentType,
+		)
+	}
+
+	if obj.ContentType != nil {
+		w.Header().Set(
+			"Content-Type",
+			*obj.ContentType,
+		)
+	}
+
+	log.Printf(
+		"Sending Content-Type: %s",
+		w.Header().Get("Content-Type"),
 	)
 
-	fs.ServeHTTP(w, r)
+	io.Copy(
+		w,
+		obj.Body,
+	)
 }

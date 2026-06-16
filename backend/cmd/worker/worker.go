@@ -19,6 +19,15 @@ import (
 func processDeployment(job database.Deployment, db *database.Queries) error {
 	// -----------------TEMP FOLDER CREATION FOR THE DEPLOYMENT ----------------------
 	projectPath := "/tmp/project-arthur/" + job.ID.String()
+	defer func() {
+		if err := os.RemoveAll(projectPath); err != nil {
+			log.Printf(
+				"failed to cleanup %s: %v",
+				projectPath,
+				err,
+			)
+		}
+	}()
 
 	err := os.MkdirAll(projectPath, 0755)
 	if err != nil {
@@ -168,84 +177,6 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 		)
 		return fmt.Errorf("Dist folder not found")
 	}
-
-	// ------------------- COPYING THE DIST ARTIFACT -----------------------------------------
-
-	storageBasePath := "./storage/deployments"
-
-	err = os.MkdirAll(storageBasePath, 0755)
-	if err != nil {
-		return err
-	}
-
-	deploymentStoragePath := filepath.Join(
-		storageBasePath,
-		job.ID.String(),
-	)
-
-	err = os.MkdirAll(deploymentStoragePath, 0755)
-	if err != nil {
-		return err
-	}
-
-	log.Println("Copying build artifacts....")
-	addLog(
-		db,
-		job.ID,
-		"Copying Build Artifacts.....",
-	)
-
-	cmd = exec.Command(
-		"cp",
-		"-r",
-		distPath+"/.",
-		deploymentStoragePath,
-	)
-
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		addLog(
-			db,
-			job.ID,
-			fmt.Sprintf(
-				"Copy Failed:\n%s",
-				string(output),
-			),
-		)
-		return fmt.Errorf(
-			"copy failed: %v\n%s",
-			err, 
-			string(output),
-		)
-	}
-
-	// ------------------ VERIFYING THE DIST COPY --------------------------------------
-
-	files, err := os.ReadDir(deploymentStoragePath)
-	if err != nil {
-		return err
-	}
-
-	if len(files) == 0 {
-		addLog(
-			db,
-			job.ID,
-			fmt.Sprintf(
-				"Artifacts Failed To Copy:\n%s",
-				string(output),
-			),
-		)
-		return fmt.Errorf("no artifacts copied")
-	}
-
-	log.Println("Stored artifacts:")
-
-	addLog(
-		db,
-		job.ID,
-		"Artifacts Copied Successfully",
-	)
-
 	// --------------------UPLOADING TO S3---------------------
 
 	addLog(
@@ -256,7 +187,7 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 
 	err = storage.UploadDirectory(
 		job.ID.String(),
-		deploymentStoragePath,
+		distPath,
 	)
 
 	if err != nil {
@@ -274,21 +205,11 @@ func processDeployment(job database.Deployment, db *database.Queries) error {
 	addLog(
 		db,
 		job.ID,
-		"Artifacts Uploaded To S3 Successfully",
+		fmt.Sprintf(
+			"Artifacts Uploaded To S3 Successfully (%s)",
+			job.ID.String(),
+		),
 	)
-
-	//------------------------- LOGGING THE FILES UPLOADED -------------------
-	
-	for _, file := range files {
-		log.Println(file.Name())
-	}
-	// ------------------------------------ REMOVING THE TEMP FILES ----------------------------------------------
-	err = os.RemoveAll(projectPath)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Storage path: %s", storageBasePath)
 
 	// -----------------------------MARKING SUCCESS OF THE PROJECT DEPLOYMENT --------------------------------
 
