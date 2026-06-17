@@ -38,3 +38,10 @@ SELECT *
 FROM deployments
 WHERE id::text LIKE $1 || '%'
 LIMIT 1;
+
+-- name: ResetBuildingDeployments :exec
+UPDATE deployments
+SET status = 'queued',
+    updated_at = NOW()
+WHERE status = 'building'
+AND updated_at < NOW() - INTERVAL '5 minutes';~

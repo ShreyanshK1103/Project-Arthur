@@ -270,6 +270,14 @@ func main () {
 
 	db := database.New(conn)
 
+	// This sets the building failed job to queued again so it can be retried
+	err = db.ResetBuildingDeployments(
+		context.Background(),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for {
 		job, err := db.GetNextDeployment(context.Background())
 		if err != nil {

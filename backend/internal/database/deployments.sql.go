@@ -139,3 +139,16 @@ func (q *Queries) MarkDeploymentSuccess(ctx context.Context, arg MarkDeploymentS
 	_, err := q.db.ExecContext(ctx, markDeploymentSuccess, arg.ID, arg.Url)
 	return err
 }
+
+const resetBuildingDeployments = `-- name: ResetBuildingDeployments :exec
+UPDATE deployments
+SET status = 'queued',
+    updated_at = NOW()
+WHERE status = 'building'
+AND updated_at < NOW() - INTERVAL '5 minutes'
+`
+
+func (q *Queries) ResetBuildingDeployments(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, resetBuildingDeployments)
+	return err
+}
