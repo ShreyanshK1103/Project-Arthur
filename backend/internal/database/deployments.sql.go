@@ -82,15 +82,19 @@ func (q *Queries) GetDeploymentByPrefix(ctx context.Context, dollar_1 sql.NullSt
 }
 
 const getNextDeployment = `-- name: GetNextDeployment :one
-UPDATE deployments
-SET status = 'building',
-    updated_at = NOW()
-WHERE id = (
+WITH next_job AS (
     SELECT id
     FROM deployments
     WHERE status = 'queued'
     ORDER BY created_at
     LIMIT 1
+    FOR UPDATE SKIP LOCKED
+)
+UPDATE deployments
+SET status = 'building',
+    updated_at = NOW()
+WHERE id = (
+    SELECT id FROM next_job
 )
 RETURNING id, project_id, status, repo_url, url, created_at, updated_at
 `

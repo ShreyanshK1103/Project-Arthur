@@ -8,15 +8,19 @@ SELECT * FROM deployments
 WHERE id = $1;
 
 -- name: GetNextDeployment :one
-UPDATE deployments
-SET status = 'building',
-    updated_at = NOW()
-WHERE id = (
+WITH next_job AS (
     SELECT id
     FROM deployments
     WHERE status = 'queued'
     ORDER BY created_at
     LIMIT 1
+    FOR UPDATE SKIP LOCKED
+)
+UPDATE deployments
+SET status = 'building',
+    updated_at = NOW()
+WHERE id = (
+    SELECT id FROM next_job
 )
 RETURNING *;
 
@@ -44,4 +48,4 @@ UPDATE deployments
 SET status = 'queued',
     updated_at = NOW()
 WHERE status = 'building'
-AND updated_at < NOW() - INTERVAL '5 minutes';~
+AND updated_at < NOW() - INTERVAL '5 minutes';
