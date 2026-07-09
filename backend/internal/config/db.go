@@ -20,7 +20,6 @@ func ConnectDB() (*sql.DB, string, error) {
 	if portString == "" {
 		log.Fatal("There is no PORT in the environment")
 	}
-	
 
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {

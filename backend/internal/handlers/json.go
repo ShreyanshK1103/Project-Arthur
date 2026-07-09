@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"net/http"
-	"log"
 	"encoding/json"
+	"log"
+	"net/http"
 )
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
@@ -30,5 +30,5 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(code) // This writes the status code
-	w.Write(data) // This returns the data
+	w.Write(data)       // This returns the data
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/logs"
 )
 
-func CloneRepo (job database.Deployment, db *database.Queries, projectPath string)  error {
+func CloneRepo(job database.Deployment, db *database.Queries, projectPath string) error {
 
 	logs.AddLog(
 		db,
@@ -38,7 +38,7 @@ func CloneRepo (job database.Deployment, db *database.Queries, projectPath strin
 		)
 		return fmt.Errorf(
 			"git clone failed: %v\n%s",
-			err, 
+			err,
 			string(output),
 		)
 	}

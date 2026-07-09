@@ -95,17 +95,17 @@ func UploadDirectory(
 			)
 
 			contentType := "application/octet-stream"
-				switch filepath.Ext(path) {
-				case ".html":
-					contentType = "text/html"
-				case ".css":
-					contentType = "text/css"
-				case ".js":
-					contentType = "application/javascript"
-				case ".json":
-					contentType = "application/json"
-				case ".svg":
-					contentType = "image/svg+xml"
+			switch filepath.Ext(path) {
+			case ".html":
+				contentType = "text/html"
+			case ".css":
+				contentType = "text/css"
+			case ".js":
+				contentType = "application/javascript"
+			case ".json":
+				contentType = "application/json"
+			case ".svg":
+				contentType = "image/svg+xml"
 			}
 
 			_, err = uploader.Upload(
@@ -123,7 +123,7 @@ func UploadDirectory(
 	)
 }
 
-func GetObject (key string,) (*s3.GetObjectOutput, error) {
+func GetObject(key string) (*s3.GetObjectOutput, error) {
 	client, err := NewS3Client()
 	if err != nil {
 		return nil, err
@@ -137,12 +137,12 @@ func GetObject (key string,) (*s3.GetObjectOutput, error) {
 		context.Background(),
 		&s3.GetObjectInput{
 			Bucket: &bucketName,
-			Key: &key,
+			Key:    &key,
 		},
 	)
 }
 
-func GetDeploymentFile(deploymentID string, requestPath string,) (*s3.GetObjectOutput, error) {
+func GetDeploymentFile(deploymentID string, requestPath string) (*s3.GetObjectOutput, error) {
 	if requestPath == "/" {
 		requestPath = "/index.html"
 	}

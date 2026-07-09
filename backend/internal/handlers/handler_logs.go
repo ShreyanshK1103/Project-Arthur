@@ -42,7 +42,7 @@ func (cfg *Config) HandlerGetDeploymentLogs(w http.ResponseWriter, r *http.Reque
 		w,
 		200,
 		models.DeploymentLogsResponse{
-			Logs:models.DeploymentLogsToStrings(logs),
+			Logs: models.DeploymentLogsToStrings(logs),
 		},
 	)
 }

@@ -42,7 +42,7 @@ func InstallDependencies(job database.Deployment, db *database.Queries, projectP
 		)
 		return fmt.Errorf(
 			"npm install failed: %v\n%s",
-			err, 
+			err,
 			string(output),
 		)
 	}

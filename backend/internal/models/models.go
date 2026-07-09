@@ -8,32 +8,32 @@ import (
 )
 
 type User struct {
-	ID uuid.UUID `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Name string `json:"name"`
-	Email string `json:"email"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
 }
 
 type Projects struct {
-	ID uuid.UUID `json:"project_id"`
-	Name string `json:"name"`
-	UserID uuid.UUID `json:"id"`
+	ID        uuid.UUID `json:"project_id"`
+	Name      string    `json:"name"`
+	UserID    uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type Deployments struct {
-	ID uuid.UUID `json:"id"`
-    ProjectID uuid.UUID `json:"project_id"`
-    Status string `json:"status"`
-    RepoUrl string `json:"repo_url"`
-    Url *string `json:"url"`
+	ID        uuid.UUID `json:"id"`
+	ProjectID uuid.UUID `json:"project_id"`
+	Status    string    `json:"status"`
+	RepoUrl   string    `json:"repo_url"`
+	Url       *string   `json:"url"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type DeploymentLogsResponse struct {
-	Logs []string  `json:"logs"`
+	Logs []string `json:"logs"`
 }
 
 func DeploymentToResponse(d database.Deployment) Deployments {
@@ -43,11 +43,11 @@ func DeploymentToResponse(d database.Deployment) Deployments {
 	}
 
 	return Deployments{
-		ID: d.ID,
+		ID:        d.ID,
 		ProjectID: d.ProjectID,
-		Status: d.Status,
-		RepoUrl: d.RepoUrl,
-		Url: url,
+		Status:    d.Status,
+		RepoUrl:   d.RepoUrl,
+		Url:       url,
 		CreatedAt: d.CreatedAt,
 		UpdatedAt: d.UpdatedAt,
 	}

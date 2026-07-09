@@ -13,7 +13,7 @@ func AddLog(db *database.Queries, deploymentID uuid.UUID, message string) {
 		context.Background(),
 		database.CreateDeploymentLogParams{
 			DeploymentID: deploymentID,
-			Log: message,
+			Log:          message,
 		},
 	)
 

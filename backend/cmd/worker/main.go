@@ -6,12 +6,11 @@ import (
 	"time"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
-	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/deployment"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/deployment"
 )
 
-
-func main () {
+func main() {
 	conn, _, err := config.ConnectDB()
 	if err != nil {
 		log.Fatal(err)

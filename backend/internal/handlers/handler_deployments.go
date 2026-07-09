@@ -13,7 +13,7 @@ import (
 
 func (cfg *Config) HandlerCreateDeployment(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		ProjectID string `json:"project_id"`
+		ProjectID  string `json:"project_id"`
 		ProjectURL string `json:"repo_url"`
 	}
 
@@ -22,7 +22,7 @@ func (cfg *Config) HandlerCreateDeployment(w http.ResponseWriter, r *http.Reques
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Error Parsing JSON : %v", err));
+		respondWithError(w, 400, fmt.Sprintf("Error Parsing JSON : %v", err))
 		return
 	}
 

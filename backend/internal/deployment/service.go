@@ -14,7 +14,6 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/storage"
 )
 
-
 func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 	// -----------------TEMP FOLDER CREATION FOR THE DEPLOYMENT ----------------------
 	projectPath := "/tmp/project-arthur/" + job.ID.String()
@@ -94,7 +93,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 			ID: job.ID,
 			Url: sql.NullString{
 				String: deploymentURL,
-				Valid: true,
+				Valid:  true,
 			},
 		},
 	)
@@ -112,7 +111,6 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 		job.ID,
 		"Deployment Successful",
 	)
-
 
 	return nil
 }

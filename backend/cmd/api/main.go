@@ -12,15 +12,13 @@ import (
 	"github.com/go-chi/cors"
 )
 
-
-
-func main () {
+func main() {
 
 	conn, portString, err := config.ConnectDB()
 	db := database.New(conn)
 
 	apiCfg := handlers.Config{
-		DB : db,
+		DB: db,
 	}
 
 	router := chi.NewRouter()
@@ -37,9 +35,9 @@ func main () {
 	v1Router := chi.NewRouter()
 
 	v1Router.Get("/healthz", handlers.HandlerReadiness)
-	v1Router.Get("/deployments/{id}", apiCfg.HandlerGetDeployment) 
+	v1Router.Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
 	v1Router.Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
-	
+
 	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
 
 	router.Mount("/v1", v1Router)
@@ -48,8 +46,8 @@ func main () {
 	router.Handle("/*", http.HandlerFunc(apiCfg.HandlerServeByDomain))
 
 	srv := &http.Server{
-		Handler : router,
-		Addr: ":" + portString,
+		Handler: router,
+		Addr:    ":" + portString,
 	}
 
 	log.Printf("Server Starting on port %v", portString)
