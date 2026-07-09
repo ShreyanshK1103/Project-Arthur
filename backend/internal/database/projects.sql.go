@@ -14,7 +14,7 @@ import (
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (name, user_id)
 VALUES($1, $2)
-RETURNING id, name, user_id, created_at
+RETURNING id, name, user_id, created_at, install_command, build_command, output_dir
 `
 
 type CreateProjectParams struct {
@@ -30,12 +30,15 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.Name,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.InstallCommand,
+		&i.BuildCommand,
+		&i.OutputDir,
 	)
 	return i, err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, user_id, created_at FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir FROM projects
 WHERE id = $1
 `
 
@@ -47,12 +50,15 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.Name,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.InstallCommand,
+		&i.BuildCommand,
+		&i.OutputDir,
 	)
 	return i, err
 }
 
 const getProjectsByUsers = `-- name: GetProjectsByUsers :many
-SELECT id, name, user_id, created_at FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir FROM projects
 WHERE user_id = $1
 ORDER BY created_at DESC
 `
@@ -71,6 +77,9 @@ func (q *Queries) GetProjectsByUsers(ctx context.Context, userID uuid.UUID) ([]P
 			&i.Name,
 			&i.UserID,
 			&i.CreatedAt,
+			&i.InstallCommand,
+			&i.BuildCommand,
+			&i.OutputDir,
 		); err != nil {
 			return nil, err
 		}

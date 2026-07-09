@@ -29,10 +29,13 @@ type DeploymentLog struct {
 }
 
 type Project struct {
-	ID        uuid.UUID
-	Name      string
-	UserID    uuid.UUID
-	CreatedAt time.Time
+	ID             uuid.UUID
+	Name           string
+	UserID         uuid.UUID
+	CreatedAt      time.Time
+	InstallCommand string
+	BuildCommand   string
+	OutputDir      string
 }
 
 type User struct {
