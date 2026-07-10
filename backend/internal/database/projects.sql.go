@@ -19,10 +19,13 @@ INSERT INTO projects (
     repo_url, 
     install_command, 
     build_command, 
-    output_dir
+    output_dir,
+    github_repo_id,
+    branch,
+    auto_deploy
 )
 VALUES(
-    $1,$2,$3,$4,$5,$6
+    $1,$2,$3,$4,$5,$6,$7,$8,$9
 )
 RETURNING id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy
 `
@@ -34,6 +37,9 @@ type CreateProjectParams struct {
 	InstallCommand string
 	BuildCommand   string
 	OutputDir      string
+	GithubRepoID   sql.NullInt64
+	Branch         string
+	AutoDeploy     bool
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
@@ -44,6 +50,9 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.InstallCommand,
 		arg.BuildCommand,
 		arg.OutputDir,
+		arg.GithubRepoID,
+		arg.Branch,
+		arg.AutoDeploy,
 	)
 	var i Project
 	err := row.Scan(

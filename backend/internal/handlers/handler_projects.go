@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,6 +20,9 @@ func (cfg *Config) HandlerCreateProject (w http.ResponseWriter, r *http.Request)
 		InstallCommand string `json:"install_command"`
 		BuildCommand string `json:"build_command"`
 		OutputDir string `json:"output_dir"`
+		GithubRepoID *int64 `json:"github_repo_id"`
+		Branch string `json:"branch"`
+		AutoDeploy *bool `json:"auto_deploy"`
 	}
 
 	params := parameters{}
@@ -55,6 +59,24 @@ func (cfg *Config) HandlerCreateProject (w http.ResponseWriter, r *http.Request)
 		params.OutputDir = "dist"
 	}
 
+	if params.Branch == "" {
+		params.Branch = "main"
+	}
+
+	githubRepoID := sql.NullInt64{}
+
+	if params.GithubRepoID != nil {
+		githubRepoID = sql.NullInt64{
+			Int64: *params.GithubRepoID,
+			Valid: true,
+		}
+	}
+
+	autoDeploy := true
+
+	if params.AutoDeploy != nil {
+		autoDeploy = *params.AutoDeploy
+	}
 	project, err := cfg.DB.CreateProject(
 		r.Context(),
 		database.CreateProjectParams{
@@ -64,6 +86,9 @@ func (cfg *Config) HandlerCreateProject (w http.ResponseWriter, r *http.Request)
 			InstallCommand: params.InstallCommand,
 			BuildCommand: params.BuildCommand,
 			OutputDir: params.OutputDir,
+			GithubRepoID: githubRepoID,
+			Branch: params.Branch,
+			AutoDeploy: autoDeploy,
 		},
 	)
 

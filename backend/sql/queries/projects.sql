@@ -5,10 +5,13 @@ INSERT INTO projects (
     repo_url, 
     install_command, 
     build_command, 
-    output_dir
+    output_dir,
+    github_repo_id,
+    branch,
+    auto_deploy
 )
 VALUES(
-    $1,$2,$3,$4,$5,$6
+    $1,$2,$3,$4,$5,$6,$7,$8,$9
 )
 RETURNING *;
 

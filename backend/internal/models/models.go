@@ -25,6 +25,9 @@ type Projects struct {
 	OutputDir string `json:"output_dir"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	GithubRepoID *int64 `json:"github_repo_id"`
+	Branch string `json:"branch"`
+	AutoDeploy bool `json:"auto_deploy"`
 }
 
 type Deployments struct {
@@ -67,6 +70,12 @@ func DeploymentLogsToStrings(logs []database.DeploymentLog) []string {
 }
 
 func ProjectToResponse(p database.Project) Projects {
+	var repoID *int64
+
+	if p.GithubRepoID.Valid {
+		repoID = &p.GithubRepoID.Int64
+	}
+	
 	return Projects{
 		ID: p.ID,
 		Name: p.Name,
@@ -77,6 +86,9 @@ func ProjectToResponse(p database.Project) Projects {
 		OutputDir: p.OutputDir,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
+		GithubRepoID: repoID,
+		Branch: p.Branch,
+		AutoDeploy: p.AutoDeploy,
 	}
 }
 
