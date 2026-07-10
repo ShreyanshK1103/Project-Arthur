@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -23,7 +24,7 @@ INSERT INTO projects (
 VALUES(
     $1,$2,$3,$4,$5,$6
 )
-RETURNING id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at
+RETURNING id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy
 `
 
 type CreateProjectParams struct {
@@ -55,12 +56,42 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.OutputDir,
 		&i.RepoUrl,
 		&i.UpdatedAt,
+		&i.GithubRepoID,
+		&i.Branch,
+		&i.AutoDeploy,
+	)
+	return i, err
+}
+
+const getProjectByGithubRepoID = `-- name: GetProjectByGithubRepoID :one
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy
+FROM projects
+WHERE github_repo_id = $1
+AND auto_deploy = true
+`
+
+func (q *Queries) GetProjectByGithubRepoID(ctx context.Context, githubRepoID sql.NullInt64) (Project, error) {
+	row := q.db.QueryRowContext(ctx, getProjectByGithubRepoID, githubRepoID)
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.InstallCommand,
+		&i.BuildCommand,
+		&i.OutputDir,
+		&i.RepoUrl,
+		&i.UpdatedAt,
+		&i.GithubRepoID,
+		&i.Branch,
+		&i.AutoDeploy,
 	)
 	return i, err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy FROM projects
 WHERE id = $1
 `
 
@@ -77,12 +108,15 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.OutputDir,
 		&i.RepoUrl,
 		&i.UpdatedAt,
+		&i.GithubRepoID,
+		&i.Branch,
+		&i.AutoDeploy,
 	)
 	return i, err
 }
 
 const getProjectsByUsers = `-- name: GetProjectsByUsers :many
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy FROM projects
 WHERE user_id = $1
 ORDER BY created_at DESC
 `
@@ -106,6 +140,9 @@ func (q *Queries) GetProjectsByUsers(ctx context.Context, userID uuid.UUID) ([]P
 			&i.OutputDir,
 			&i.RepoUrl,
 			&i.UpdatedAt,
+			&i.GithubRepoID,
+			&i.Branch,
+			&i.AutoDeploy,
 		); err != nil {
 			return nil, err
 		}

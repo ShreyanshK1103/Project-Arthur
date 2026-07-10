@@ -20,3 +20,9 @@ WHERE id = $1;
 SELECT * FROM projects
 WHERE user_id = $1
 ORDER BY created_at DESC;
+
+-- name: GetProjectByGithubRepoID :one
+SELECT *
+FROM projects
+WHERE github_repo_id = $1
+AND auto_deploy = true;

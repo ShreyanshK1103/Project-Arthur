@@ -37,6 +37,9 @@ type Project struct {
 	OutputDir      string
 	RepoUrl        string
 	UpdatedAt      time.Time
+	GithubRepoID   sql.NullInt64
+	Branch         string
+	AutoDeploy     bool
 }
 
 type User struct {
