@@ -9,7 +9,7 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/logs"
 )
 
-func InstallDependencies(job database.Deployment, db *database.Queries, projectPath string) error {
+func InstallDependencies(command string, job database.Deployment, db *database.Queries, projectPath string) error {
 
 	log.Println("Installing dependencies.....")
 	logs.AddLog(
@@ -25,8 +25,9 @@ func InstallDependencies(job database.Deployment, db *database.Queries, projectP
 		"-v", projectPath+":/app",
 		"-w", "/app",
 		"node:24",
-		"npm",
-		"install",
+		"sh",
+		"-c",
+		command,
 	)
 
 	output, err := cmd.CombinedOutput()

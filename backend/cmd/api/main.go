@@ -39,6 +39,7 @@ func main() {
 	v1Router.Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
 
 	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
+	v1Router.Post("/projects",apiCfg.HandlerCreateProject)
 
 	router.Mount("/v1", v1Router)
 

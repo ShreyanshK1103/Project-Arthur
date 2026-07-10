@@ -15,7 +15,6 @@ type Deployment struct {
 	ID        uuid.UUID
 	ProjectID uuid.UUID
 	Status    string
-	RepoUrl   string
 	Url       sql.NullString
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -36,6 +35,8 @@ type Project struct {
 	InstallCommand string
 	BuildCommand   string
 	OutputDir      string
+	RepoUrl        string
+	UpdatedAt      time.Time
 }
 
 type User struct {

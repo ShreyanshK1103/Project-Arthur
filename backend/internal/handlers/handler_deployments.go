@@ -14,7 +14,6 @@ import (
 func (cfg *Config) HandlerCreateDeployment(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		ProjectID  string `json:"project_id"`
-		ProjectURL string `json:"repo_url"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -34,7 +33,6 @@ func (cfg *Config) HandlerCreateDeployment(w http.ResponseWriter, r *http.Reques
 
 	jobs, err := cfg.DB.CreateDeployment(r.Context(), database.CreateDeploymentParams{
 		ProjectID: projectID,
-		RepoUrl:   params.ProjectURL,
 		Status:    "queued",
 	})
 

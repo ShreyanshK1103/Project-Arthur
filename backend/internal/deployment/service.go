@@ -15,6 +15,7 @@ import (
 )
 
 func ProcessDeployment(job database.Deployment, db *database.Queries) error {
+	
 	// -----------------TEMP FOLDER CREATION FOR THE DEPLOYMENT ----------------------
 	projectPath := "/tmp/project-arthur/" + job.ID.String()
 	defer func() {
@@ -32,16 +33,24 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 		return err
 	}
 
+	project, err := db.GetProjectByID(
+		context.Background(),
+		job.ProjectID,
+	)
+	if err != nil {
+		return err
+	}
+
 	// --------------------------CLONING THE REPO ---------------------------------------
 
-	err = builder.CloneRepo(job, db, projectPath)
+	err = builder.CloneRepo(project.RepoUrl, job, db, projectPath)
 	if err != nil {
 		return err
 	}
 
 	// ------------------------- INSTALLING THE PROJECT DEPENDENCIES --------------------------------
 
-	err = builder.InstallDependencies(job, db, projectPath)
+	err = builder.InstallDependencies(project.InstallCommand, job, db, projectPath)
 	if err != nil {
 		return err
 	}
@@ -53,7 +62,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 	}
 	//----------------------------- VERIFYING THE BUILD -------------------------------
 
-	distPath := filepath.Join(projectPath, "dist")
+	distPath := filepath.Join(projectPath, project.OutputDir)
 
 	_, err = os.Stat(distPath)
 	if err != nil {

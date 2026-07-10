@@ -9,7 +9,7 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/logs"
 )
 
-func CloneRepo(job database.Deployment, db *database.Queries, projectPath string) error {
+func CloneRepo(repoUrl string, job database.Deployment, db *database.Queries, projectPath string) error {
 
 	logs.AddLog(
 		db,
@@ -17,12 +17,12 @@ func CloneRepo(job database.Deployment, db *database.Queries, projectPath string
 		"Cloning repository.....",
 	)
 
-	log.Printf("Cloning repo: %s", job.RepoUrl)
+	log.Printf("Cloning repo: %s", repoUrl)
 
 	cmd := exec.Command(
 		"git",
 		"clone",
-		job.RepoUrl,
+		repoUrl,
 		projectPath,
 	)
 

@@ -1,6 +1,15 @@
 -- name: CreateProject :one
-INSERT INTO projects (name, user_id)
-VALUES($1, $2)
+INSERT INTO projects (
+    name, 
+    user_id, 
+    repo_url, 
+    install_command, 
+    build_command, 
+    output_dir
+)
+VALUES(
+    $1,$2,$3,$4,$5,$6
+)
 RETURNING *;
 
 -- name: GetProjectByID :one

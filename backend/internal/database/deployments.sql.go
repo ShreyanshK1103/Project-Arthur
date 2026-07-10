@@ -13,25 +13,23 @@ import (
 )
 
 const createDeployment = `-- name: CreateDeployment :one
-INSERT INTO deployments (project_id, status, repo_url)
-VALUES ($1, $2, $3)
-RETURNING id, project_id, status, repo_url, url, created_at, updated_at
+INSERT INTO deployments (project_id, status)
+VALUES ($1, $2)
+RETURNING id, project_id, status, url, created_at, updated_at
 `
 
 type CreateDeploymentParams struct {
 	ProjectID uuid.UUID
 	Status    string
-	RepoUrl   string
 }
 
 func (q *Queries) CreateDeployment(ctx context.Context, arg CreateDeploymentParams) (Deployment, error) {
-	row := q.db.QueryRowContext(ctx, createDeployment, arg.ProjectID, arg.Status, arg.RepoUrl)
+	row := q.db.QueryRowContext(ctx, createDeployment, arg.ProjectID, arg.Status)
 	var i Deployment
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
 		&i.Status,
-		&i.RepoUrl,
 		&i.Url,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -40,7 +38,7 @@ func (q *Queries) CreateDeployment(ctx context.Context, arg CreateDeploymentPara
 }
 
 const getDeploymentByID = `-- name: GetDeploymentByID :one
-SELECT id, project_id, status, repo_url, url, created_at, updated_at FROM deployments
+SELECT id, project_id, status, url, created_at, updated_at FROM deployments
 WHERE id = $1
 `
 
@@ -51,7 +49,6 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 		&i.ID,
 		&i.ProjectID,
 		&i.Status,
-		&i.RepoUrl,
 		&i.Url,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -60,7 +57,7 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 }
 
 const getDeploymentByPrefix = `-- name: GetDeploymentByPrefix :one
-SELECT id, project_id, status, repo_url, url, created_at, updated_at
+SELECT id, project_id, status, url, created_at, updated_at
 FROM deployments
 WHERE id::text LIKE $1 || '%'
 LIMIT 1
@@ -73,7 +70,6 @@ func (q *Queries) GetDeploymentByPrefix(ctx context.Context, dollar_1 sql.NullSt
 		&i.ID,
 		&i.ProjectID,
 		&i.Status,
-		&i.RepoUrl,
 		&i.Url,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -96,7 +92,7 @@ SET status = 'building',
 WHERE id = (
     SELECT id FROM next_job
 )
-RETURNING id, project_id, status, repo_url, url, created_at, updated_at
+RETURNING id, project_id, status, url, created_at, updated_at
 `
 
 func (q *Queries) GetNextDeployment(ctx context.Context) (Deployment, error) {
@@ -106,7 +102,6 @@ func (q *Queries) GetNextDeployment(ctx context.Context) (Deployment, error) {
 		&i.ID,
 		&i.ProjectID,
 		&i.Status,
-		&i.RepoUrl,
 		&i.Url,
 		&i.CreatedAt,
 		&i.UpdatedAt,

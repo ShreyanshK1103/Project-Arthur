@@ -12,18 +12,38 @@ import (
 )
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (name, user_id)
-VALUES($1, $2)
-RETURNING id, name, user_id, created_at, install_command, build_command, output_dir
+INSERT INTO projects (
+    name, 
+    user_id, 
+    repo_url, 
+    install_command, 
+    build_command, 
+    output_dir
+)
+VALUES(
+    $1,$2,$3,$4,$5,$6
+)
+RETURNING id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at
 `
 
 type CreateProjectParams struct {
-	Name   string
-	UserID uuid.UUID
+	Name           string
+	UserID         uuid.UUID
+	RepoUrl        string
+	InstallCommand string
+	BuildCommand   string
+	OutputDir      string
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
-	row := q.db.QueryRowContext(ctx, createProject, arg.Name, arg.UserID)
+	row := q.db.QueryRowContext(ctx, createProject,
+		arg.Name,
+		arg.UserID,
+		arg.RepoUrl,
+		arg.InstallCommand,
+		arg.BuildCommand,
+		arg.OutputDir,
+	)
 	var i Project
 	err := row.Scan(
 		&i.ID,
@@ -33,12 +53,14 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.InstallCommand,
 		&i.BuildCommand,
 		&i.OutputDir,
+		&i.RepoUrl,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at FROM projects
 WHERE id = $1
 `
 
@@ -53,12 +75,14 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.InstallCommand,
 		&i.BuildCommand,
 		&i.OutputDir,
+		&i.RepoUrl,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getProjectsByUsers = `-- name: GetProjectsByUsers :many
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at FROM projects
 WHERE user_id = $1
 ORDER BY created_at DESC
 `
@@ -80,6 +104,8 @@ func (q *Queries) GetProjectsByUsers(ctx context.Context, userID uuid.UUID) ([]P
 			&i.InstallCommand,
 			&i.BuildCommand,
 			&i.OutputDir,
+			&i.RepoUrl,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

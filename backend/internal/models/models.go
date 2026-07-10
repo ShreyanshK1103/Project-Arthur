@@ -16,17 +16,21 @@ type User struct {
 }
 
 type Projects struct {
-	ID        uuid.UUID `json:"project_id"`
-	Name      string    `json:"name"`
-	UserID    uuid.UUID `json:"id"`
+	ID uuid.UUID `json:"project_id"`
+	Name string `json:"name"`
+	UserID uuid.UUID `json:"user_id"`
+	RepoUrl string `json:"repo_url"`
+	InstallCommand string `json:"install_command"`
+	BuildCommand string `json:"build_command"`
+	OutputDir string `json:"output_dir"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Deployments struct {
 	ID        uuid.UUID `json:"id"`
 	ProjectID uuid.UUID `json:"project_id"`
 	Status    string    `json:"status"`
-	RepoUrl   string    `json:"repo_url"`
 	Url       *string   `json:"url"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -46,7 +50,6 @@ func DeploymentToResponse(d database.Deployment) Deployments {
 		ID:        d.ID,
 		ProjectID: d.ProjectID,
 		Status:    d.Status,
-		RepoUrl:   d.RepoUrl,
 		Url:       url,
 		CreatedAt: d.CreatedAt,
 		UpdatedAt: d.UpdatedAt,
@@ -61,4 +64,18 @@ func DeploymentLogsToStrings(logs []database.DeploymentLog) []string {
 	}
 
 	return result
+}
+
+func ProjectToResponse(p database.Project) Projects {
+	return Projects{
+		ID: p.ID,
+		Name: p.Name,
+		UserID: p.UserID,
+		RepoUrl: p.RepoUrl,
+		InstallCommand: p.InstallCommand,
+		BuildCommand: p.BuildCommand,
+		OutputDir: p.OutputDir,
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
 }
