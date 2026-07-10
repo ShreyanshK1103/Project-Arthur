@@ -77,6 +77,43 @@ func (q *Queries) GetDeploymentByPrefix(ctx context.Context, dollar_1 sql.NullSt
 	return i, err
 }
 
+const getDeploymentsByProject = `-- name: GetDeploymentsByProject :many
+SELECT id, project_id, status, url, created_at, updated_at
+FROM deployments
+WHERE project_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetDeploymentsByProject(ctx context.Context, projectID uuid.UUID) ([]Deployment, error) {
+	rows, err := q.db.QueryContext(ctx, getDeploymentsByProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Deployment
+	for rows.Next() {
+		var i Deployment
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Status,
+			&i.Url,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getNextDeployment = `-- name: GetNextDeployment :one
 WITH next_job AS (
     SELECT id

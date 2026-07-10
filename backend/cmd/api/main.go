@@ -37,6 +37,7 @@ func main() {
 	v1Router.Get("/healthz", handlers.HandlerReadiness)
 	v1Router.Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
 	v1Router.Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
+	v1Router.Get("/projects/{id}/deployments", apiCfg.HandlerGetProjectDeployment)
 
 	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
 	v1Router.Post("/projects",apiCfg.HandlerCreateProject)

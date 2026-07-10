@@ -49,3 +49,9 @@ SET status = 'queued',
     updated_at = NOW()
 WHERE status = 'building'
 AND updated_at < NOW() - INTERVAL '5 minutes';
+
+-- name: GetDeploymentsByProject :many
+SELECT *
+FROM deployments
+WHERE project_id = $1
+ORDER BY created_at DESC;

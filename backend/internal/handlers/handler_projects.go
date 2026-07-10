@@ -7,6 +7,7 @@ import (
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/models"
+	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 )
 
@@ -79,5 +80,45 @@ func (cfg *Config) HandlerCreateProject (w http.ResponseWriter, r *http.Request)
 		w,
 		201,
 		models.ProjectToResponse(project),
+	)
+}
+
+func (cfg *Config) HandlerGetProjectDeployment(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(
+		r,
+		"id",
+	)
+
+	projectID, err := uuid.Parse(idParam)
+
+	if err != nil {
+		respondWithError(
+			w,
+			400,
+			"Invalid project id",
+		)
+		return
+	}
+
+	deployments, err := cfg.DB.GetDeploymentsByProject(
+		r.Context(),
+		projectID,
+	)
+
+	if err != nil {
+		respondWithError(
+			w,
+			500,
+			err.Error(),
+		)
+		return
+	}
+
+	respondWithJSON(
+		w,
+		200,
+		models.DeploymentsToResponse(
+			deployments,
+		),
 	)
 }

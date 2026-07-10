@@ -79,3 +79,16 @@ func ProjectToResponse(p database.Project) Projects {
 		UpdatedAt: p.UpdatedAt,
 	}
 }
+
+func DeploymentsToResponse(deployments []database.Deployment,) []Deployments {
+	result := []Deployments{}
+
+	for _, deployment := range deployments {
+		result = append(
+			result, 
+			DeploymentToResponse(deployment),
+		)
+	}
+
+	return result
+}
