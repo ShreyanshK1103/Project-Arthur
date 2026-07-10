@@ -41,6 +41,7 @@ func main() {
 
 	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
 	v1Router.Post("/projects",apiCfg.HandlerCreateProject)
+	v1Router.Post("/projects/{id}/redeploy",apiCfg.HandlerRedeployProject)
 
 	router.Mount("/v1", v1Router)
 

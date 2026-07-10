@@ -122,3 +122,49 @@ func (cfg *Config) HandlerGetProjectDeployment(w http.ResponseWriter, r *http.Re
 		),
 	)
 }
+
+func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(
+		r,
+		"id",
+	)
+
+	projectID ,err := uuid.Parse(
+		idParam,
+	)
+
+	if err != nil {
+		respondWithError(
+			w,
+			400,
+			"invalid project id",
+		)
+		return
+	}
+
+	deployment, err := cfg.DB.CreateDeployment(
+		r.Context(),
+		database.CreateDeploymentParams{
+			ProjectID: projectID,
+			Status: "queued",
+		},
+	)
+
+	if err != nil {
+		respondWithError(
+			w,
+			500,
+			err.Error(),
+		)
+
+		return
+	}
+
+	respondWithJSON(
+		w,
+		201,
+		models.DeploymentToResponse(
+			deployment,
+		),
+	)
+}
