@@ -12,17 +12,17 @@ import (
 	"github.com/google/uuid"
 )
 
-func (cfg *Config) HandlerCreateProject (w http.ResponseWriter, r *http.Request) {
+func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Name string `json:"name"`
-		UserID string `json:"user_id"`
-		RepoUrl string `json:"repo_url"`
+		Name           string `json:"name"`
+		UserID         string `json:"user_id"`
+		RepoUrl        string `json:"repo_url"`
 		InstallCommand string `json:"install_command"`
-		BuildCommand string `json:"build_command"`
-		OutputDir string `json:"output_dir"`
-		GithubRepoID *int64 `json:"github_repo_id"`
-		Branch string `json:"branch"`
-		AutoDeploy *bool `json:"auto_deploy"`
+		BuildCommand   string `json:"build_command"`
+		OutputDir      string `json:"output_dir"`
+		GithubRepoID   *int64 `json:"github_repo_id"`
+		Branch         string `json:"branch"`
+		AutoDeploy     *bool  `json:"auto_deploy"`
 	}
 
 	params := parameters{}
@@ -80,15 +80,15 @@ func (cfg *Config) HandlerCreateProject (w http.ResponseWriter, r *http.Request)
 	project, err := cfg.DB.CreateProject(
 		r.Context(),
 		database.CreateProjectParams{
-			Name: params.Name,
-			UserID: userID,
-			RepoUrl: params.RepoUrl,
+			Name:           params.Name,
+			UserID:         userID,
+			RepoUrl:        params.RepoUrl,
 			InstallCommand: params.InstallCommand,
-			BuildCommand: params.BuildCommand,
-			OutputDir: params.OutputDir,
-			GithubRepoID: githubRepoID,
-			Branch: params.Branch,
-			AutoDeploy: autoDeploy,
+			BuildCommand:   params.BuildCommand,
+			OutputDir:      params.OutputDir,
+			GithubRepoID:   githubRepoID,
+			Branch:         params.Branch,
+			AutoDeploy:     autoDeploy,
 		},
 	)
 
@@ -154,7 +154,7 @@ func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request
 		"id",
 	)
 
-	projectID ,err := uuid.Parse(
+	projectID, err := uuid.Parse(
 		idParam,
 	)
 
@@ -171,7 +171,7 @@ func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request
 		r.Context(),
 		database.CreateDeploymentParams{
 			ProjectID: projectID,
-			Status: "queued",
+			Status:    "queued",
 		},
 	)
 

@@ -11,6 +11,25 @@ import (
 
 func (cfg *Config) HandlerGithubWebhook(w http.ResponseWriter, r *http.Request) {
 
+	event := r.Header.Get("X-GitHub-Event")
+
+	switch event {
+	case "ping":
+		respondWithJSON(w, 200, map[string]string{
+			"message": "pong",
+		})
+		return
+
+	case "push":
+		// continue
+
+	default:
+		respondWithJSON(w, 200, map[string]string{
+			"message": "ignored",
+		})
+		return
+	}
+
 	log.Println("========== Github Webhook =========")
 
 	type GithubPayload struct {
@@ -50,9 +69,24 @@ func (cfg *Config) HandlerGithubWebhook(w http.ResponseWriter, r *http.Request) 
 			w,
 			200,
 			map[string]string{
-				"message":"project ignored",
+				"message": "project ignored",
 			},
 		)
+		return
+	}
+
+	expectedRef := "refs/heads/" + project.Branch
+
+	if payload.Ref != expectedRef {
+		log.Printf(
+			"Ignoring push on %s (project tracks %s)",
+			payload.Ref,
+			expectedRef,
+		)
+
+		respondWithJSON(w, 200, map[string]string{
+			"message": "branch ignored",
+		})
 		return
 	}
 
@@ -66,7 +100,7 @@ func (cfg *Config) HandlerGithubWebhook(w http.ResponseWriter, r *http.Request) 
 		r.Context(),
 		database.CreateDeploymentParams{
 			ProjectID: project.ID,
-			Status: "queued",
+			Status:    "queued",
 		},
 	)
 

@@ -13,7 +13,7 @@ import (
 
 func (cfg *Config) HandlerCreateDeployment(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		ProjectID  string `json:"project_id"`
+		ProjectID string `json:"project_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)

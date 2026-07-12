@@ -15,7 +15,7 @@ import (
 )
 
 func ProcessDeployment(job database.Deployment, db *database.Queries) error {
-	
+
 	// -----------------TEMP FOLDER CREATION FOR THE DEPLOYMENT ----------------------
 	projectPath := "/tmp/project-arthur/" + job.ID.String()
 	defer func() {

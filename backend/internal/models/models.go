@@ -16,18 +16,18 @@ type User struct {
 }
 
 type Projects struct {
-	ID uuid.UUID `json:"project_id"`
-	Name string `json:"name"`
-	UserID uuid.UUID `json:"user_id"`
-	RepoUrl string `json:"repo_url"`
-	InstallCommand string `json:"install_command"`
-	BuildCommand string `json:"build_command"`
-	OutputDir string `json:"output_dir"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	GithubRepoID *int64 `json:"github_repo_id"`
-	Branch string `json:"branch"`
-	AutoDeploy bool `json:"auto_deploy"`
+	ID             uuid.UUID `json:"project_id"`
+	Name           string    `json:"name"`
+	UserID         uuid.UUID `json:"user_id"`
+	RepoUrl        string    `json:"repo_url"`
+	InstallCommand string    `json:"install_command"`
+	BuildCommand   string    `json:"build_command"`
+	OutputDir      string    `json:"output_dir"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	GithubRepoID   *int64    `json:"github_repo_id"`
+	Branch         string    `json:"branch"`
+	AutoDeploy     bool      `json:"auto_deploy"`
 }
 
 type Deployments struct {
@@ -75,29 +75,29 @@ func ProjectToResponse(p database.Project) Projects {
 	if p.GithubRepoID.Valid {
 		repoID = &p.GithubRepoID.Int64
 	}
-	
+
 	return Projects{
-		ID: p.ID,
-		Name: p.Name,
-		UserID: p.UserID,
-		RepoUrl: p.RepoUrl,
+		ID:             p.ID,
+		Name:           p.Name,
+		UserID:         p.UserID,
+		RepoUrl:        p.RepoUrl,
 		InstallCommand: p.InstallCommand,
-		BuildCommand: p.BuildCommand,
-		OutputDir: p.OutputDir,
-		CreatedAt: p.CreatedAt,
-		UpdatedAt: p.UpdatedAt,
-		GithubRepoID: repoID,
-		Branch: p.Branch,
-		AutoDeploy: p.AutoDeploy,
+		BuildCommand:   p.BuildCommand,
+		OutputDir:      p.OutputDir,
+		CreatedAt:      p.CreatedAt,
+		UpdatedAt:      p.UpdatedAt,
+		GithubRepoID:   repoID,
+		Branch:         p.Branch,
+		AutoDeploy:     p.AutoDeploy,
 	}
 }
 
-func DeploymentsToResponse(deployments []database.Deployment,) []Deployments {
+func DeploymentsToResponse(deployments []database.Deployment) []Deployments {
 	result := []Deployments{}
 
 	for _, deployment := range deployments {
 		result = append(
-			result, 
+			result,
 			DeploymentToResponse(deployment),
 		)
 	}
