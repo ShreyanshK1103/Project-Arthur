@@ -104,3 +104,13 @@ func DeploymentsToResponse(deployments []database.Deployment) []Deployments {
 
 	return result
 }
+
+func UserToResponse(u database.User) User {
+	return User{
+		ID:        u.ID,
+		Name:      u.Name,
+		Email:     u.Email,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}
+}
