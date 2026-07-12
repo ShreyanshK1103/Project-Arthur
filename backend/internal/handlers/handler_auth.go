@@ -32,7 +32,7 @@ func (cfg *Config) HandlerRegister(w http.ResponseWriter, r *http.Request) {
 	req.Email = strings.ToLower(req.Email)
 
 	// Basic Validation
-	
+
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		respondWithError(
 			w,
@@ -59,7 +59,7 @@ func (cfg *Config) HandlerRegister(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	// Removing already registered email 
+	// Removing already registered email
 	_, err = cfg.DB.GetUserByEmail(
 		r.Context(),
 		req.Email,
@@ -128,4 +128,82 @@ func (cfg *Config) HandlerRegister(w http.ResponseWriter, r *http.Request) {
 		201,
 		models.UserToResponse(user),
 	)
+}
+
+func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
+	var req models.LoginRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusBadRequest,
+			"invalid json",
+		)
+		return
+	}
+
+	req.Email = strings.TrimSpace(req.Email)
+	req.Email = strings.ToLower(req.Email)
+
+	// Validate
+	if req.Email == "" || req.Password == "" {
+		respondWithError(
+			w,
+			http.StatusBadRequest,
+			"email and password are required",
+		)
+		return
+	}
+
+	// Find User
+	user, err := cfg.DB.GetUserByEmail(
+		r.Context(),
+		req.Email,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(
+				w,
+				http.StatusUnauthorized,
+				"invalid email or password",
+			)
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(
+				w,
+				http.StatusUnauthorized,
+				"Invalid email or password",
+			)
+			return
+		}
+
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Database error",
+		)
+		return
+	}
+
+	err = auth.CheckPassword(req.Password, user.PasswordHash.String)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusUnauthorized,
+			"Invalid email or password",
+		)
+		return
+	}
+
+	//Success
+	respondWithJSON(
+		w,
+		http.StatusOK,
+		map[string]string{
+			"message": "Login successful",
+		},
+	)
+
 }
