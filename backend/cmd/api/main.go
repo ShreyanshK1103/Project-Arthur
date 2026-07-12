@@ -42,6 +42,7 @@ func main() {
 	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
 	v1Router.Post("/projects",apiCfg.HandlerCreateProject)
 	v1Router.Post("/projects/{id}/redeploy",apiCfg.HandlerRedeployProject)
+	v1Router.Post("/github/webhook", apiCfg.HandlerGithubWebhook)
 
 	router.Mount("/v1", v1Router)
 
