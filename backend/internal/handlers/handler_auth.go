@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
@@ -25,6 +26,10 @@ func (cfg *Config) HandlerRegister(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+	// Trimming the whitespaces and making the emails lowercase for the consistency
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = strings.TrimSpace(req.Email)
+	req.Email = strings.ToLower(req.Email)
 
 	// Basic Validation
 	
