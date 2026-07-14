@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/models"
 	"github.com/go-chi/chi"
@@ -15,7 +16,6 @@ import (
 func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Name           string `json:"name"`
-		UserID         string `json:"user_id"`
 		RepoUrl        string `json:"repo_url"`
 		InstallCommand string `json:"install_command"`
 		BuildCommand   string `json:"build_command"`
@@ -37,8 +37,8 @@ func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID, err := uuid.Parse(params.UserID)
-	if err != nil {
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
 		respondWithError(
 			w,
 			400,

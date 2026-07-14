@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/handlers"
@@ -35,13 +36,13 @@ func main() {
 	v1Router := chi.NewRouter()
 
 	v1Router.Get("/healthz", handlers.HandlerReadiness)
-	v1Router.Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
-	v1Router.Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
-	v1Router.Get("/projects/{id}/deployments", apiCfg.HandlerGetProjectDeployment)
+	v1Router.With(auth.MiddleWare).Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
+	v1Router.With(auth.MiddleWare).Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
+	v1Router.With(auth.MiddleWare).Get("/projects/{id}/deployments", apiCfg.HandlerGetProjectDeployment)
 
-	v1Router.Post("/deployments", apiCfg.HandlerCreateDeployment)
-	v1Router.Post("/projects", apiCfg.HandlerCreateProject)
-	v1Router.Post("/projects/{id}/redeploy", apiCfg.HandlerRedeployProject)
+	v1Router.With(auth.MiddleWare).Post("/deployments", apiCfg.HandlerCreateDeployment)
+	v1Router.With(auth.MiddleWare).Post("/projects", apiCfg.HandlerCreateProject)
+	v1Router.With(auth.MiddleWare).Post("/projects/{id}/redeploy", apiCfg.HandlerRedeployProject)
 	v1Router.Post("/github/webhook", apiCfg.HandlerGithubWebhook)
 	v1Router.Post("/auth/register", apiCfg.HandlerRegister)
 	v1Router.Post("/auth/login", apiCfg.HandlerLogin)
