@@ -198,12 +198,24 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Success
+	token, err := auth.GenerateAccessToken(user.ID)
+
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"failed to generate access token",
+		)
+		return
+	}
+
 	respondWithJSON(
 		w,
 		http.StatusOK,
-		map[string]string{
-			"message": "Login successful",
+		models.LoginResponse{
+			AccessToken: token,
+			TokenType:   "Bearer",
+			ExpiresIn:   900,
 		},
 	)
-
 }
