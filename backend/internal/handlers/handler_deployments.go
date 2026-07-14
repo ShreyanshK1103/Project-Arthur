@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	models "github.com/ShreyanshK1103/Project-Arthur/backend/internal/models"
 	"github.com/go-chi/chi"
@@ -31,8 +32,27 @@ func (cfg *Config) HandlerCreateDeployment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, 401, "Unauthorized")
+		return
+	}
+
+	project, err := cfg.DB.GetProjectByIDAndUser(
+		r.Context(),
+		database.GetProjectByIDAndUserParams{
+			ID:     projectID,
+			UserID: userID,
+		},
+	)
+
+	if err != nil {
+		respondWithError(w, 403, "Project not found")
+		return
+	}
+
 	jobs, err := cfg.DB.CreateDeployment(r.Context(), database.CreateDeploymentParams{
-		ProjectID: projectID,
+		ProjectID: project.ID,
 		Status:    "queued",
 	})
 
@@ -55,11 +75,19 @@ func (cfg *Config) HandlerGetDeployment(w http.ResponseWriter, r *http.Request) 
 		respondWithError(w, 400, fmt.Sprintf("Invalid Deployment ID: %v", err))
 	}
 
-	deployment, err := cfg.DB.GetDeploymentByID(r.Context(), id)
-	if err != nil {
-		respondWithError(w, 404, fmt.Sprintf("Deployment Not Found: %v", err))
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, 401, "Unauthorized")
 		return
 	}
+
+	deployment, err := cfg.DB.GetDeploymentByIDAndUser(
+		r.Context(),
+		database.GetDeploymentByIDAndUserParams{
+			ID:     id,
+			UserID: userID,
+		},
+	)
 
 	respondWithJSON(w, 200, models.DeploymentToResponse(deployment))
 

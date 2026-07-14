@@ -125,16 +125,34 @@ func (cfg *Config) HandlerGetProjectDeployment(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	deployments, err := cfg.DB.GetDeploymentsByProject(
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, 401, "unauthorized")
+		return
+	}
+
+	project, err := cfg.DB.GetProjectByIDAndUser(
 		r.Context(),
-		projectID,
+		database.GetProjectByIDAndUserParams{
+			ID:     projectID,
+			UserID: userID,
+		},
 	)
 
+	if err != nil {
+		respondWithError(w, 403, "project not found")
+		return
+	}
+
+	deployments, err := cfg.DB.GetDeploymentsByProject(
+		r.Context(),
+		project.ID,
+	)
 	if err != nil {
 		respondWithError(
 			w,
 			500,
-			err.Error(),
+			"Failed to fetch deployments",
 		)
 		return
 	}
@@ -167,10 +185,29 @@ func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, 401, "Unauthorized")
+		return
+	}
+
+	project, err := cfg.DB.GetProjectByIDAndUser(
+		r.Context(),
+		database.GetProjectByIDAndUserParams{
+			ID:     projectID,
+			UserID: userID,
+		},
+	)
+
+	if err != nil {
+		respondWithError(w, 404, "Project not found")
+		return
+	}
+
 	deployment, err := cfg.DB.CreateDeployment(
 		r.Context(),
 		database.CreateDeploymentParams{
-			ProjectID: projectID,
+			ProjectID: project.ID,
 			Status:    "queued",
 		},
 	)
@@ -193,3 +230,5 @@ func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request
 		),
 	)
 }
+
+//c789fca2-ef3c-41d4-811c-905f158befe0

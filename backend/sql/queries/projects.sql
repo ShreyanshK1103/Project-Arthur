@@ -29,3 +29,9 @@ SELECT *
 FROM projects
 WHERE github_repo_id = $1
 AND auto_deploy = true;
+
+-- name: GetProjectByIDAndUser :one
+SELECT *
+FROM projects
+WHERE id = $1
+AND user_id = $2;

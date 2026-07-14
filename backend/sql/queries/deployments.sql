@@ -55,3 +55,11 @@ SELECT *
 FROM deployments
 WHERE project_id = $1
 ORDER BY created_at DESC;
+
+-- name: GetDeploymentByIDAndUser :one
+SELECT d.*
+FROM deployments d
+JOIN projects p
+ON d.project_id = p.id
+WHERE d.id = $1
+AND p.user_id = $2;
