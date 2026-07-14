@@ -219,3 +219,36 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 }
+
+func (cfg *Config) HandlerMe(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.GetUserID(r.Context())
+
+	if !ok {
+		respondWithError(
+			w,
+			http.StatusUnauthorized,
+			"unauthorized",
+		)
+		return
+	}
+
+	user, err := cfg.DB.GetUserByID(
+		r.Context(),
+		userID,
+	)
+
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusNotFound,
+			"user not found",
+		)
+		return
+	}
+
+	respondWithJSON(
+		w,
+		http.StatusOK,
+		models.UserToResponse(user),
+	)
+}

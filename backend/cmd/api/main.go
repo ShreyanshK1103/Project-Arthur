@@ -39,6 +39,7 @@ func main() {
 	v1Router.With(auth.MiddleWare).Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
 	v1Router.With(auth.MiddleWare).Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
 	v1Router.With(auth.MiddleWare).Get("/projects/{id}/deployments", apiCfg.HandlerGetProjectDeployment)
+	v1Router.With(auth.MiddleWare).Get("/auth/me", apiCfg.HandlerMe)
 
 	v1Router.With(auth.MiddleWare).Post("/deployments", apiCfg.HandlerCreateDeployment)
 	v1Router.With(auth.MiddleWare).Post("/projects", apiCfg.HandlerCreateProject)
