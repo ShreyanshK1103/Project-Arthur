@@ -231,4 +231,3 @@ func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request
 	)
 }
 
-//c789fca2-ef3c-41d4-811c-905f158befe0
