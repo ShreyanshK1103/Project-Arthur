@@ -27,6 +27,15 @@ type DeploymentLog struct {
 	CreatedAt    time.Time
 }
 
+type OauthAccount struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Provider   string
+	ProviderID string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
 type Project struct {
 	ID             uuid.UUID
 	Name           string
@@ -57,8 +66,6 @@ type User struct {
 	Name          string
 	Email         string
 	PasswordHash  sql.NullString
-	Provider      string
-	ProviderID    sql.NullString
 	AvatarUrl     sql.NullString
 	EmailVerified bool
 }

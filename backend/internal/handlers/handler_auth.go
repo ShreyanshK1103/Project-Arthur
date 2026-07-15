@@ -105,9 +105,6 @@ func (cfg *Config) HandlerRegister(w http.ResponseWriter, r *http.Request) {
 				String: passwordHash,
 				Valid:  true,
 			},
-
-			Provider:      "local",
-			ProviderID:    sql.NullString{},
 			AvatarUrl:     sql.NullString{},
 			EmailVerified: false,
 		},
@@ -192,43 +189,16 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Success
-	accessToken, err := auth.GenerateAccessToken(user.ID)
-
-	if err != nil {
-		respondWithError(
-			w,
-			http.StatusInternalServerError,
-			"failed to generate access token",
-		)
-		return
-	}
-
-	refreshToken, err := auth.GenerateRefreshToken()
-
-	if err != nil {
-		respondWithError(
-			w,
-			http.StatusInternalServerError,
-			"failed to generate refresh token",
-		)
-		return
-	}
-
-	hashedRefreshToken := auth.HashRefreshToken(refreshToken)
-
-	_, err = cfg.DB.CreateRefreshToken(
+	response, err := cfg.CreateLoginSession(
 		r.Context(),
-		database.CreateRefreshTokenParams{
-			UserID:    user.ID,
-			TokenHash: hashedRefreshToken,
-			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-		},
+		user,
 	)
+
 	if err != nil {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"Couldn't save refresh token",
+			"Couldn't create login session",
 		)
 		return
 	}
@@ -236,12 +206,7 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(
 		w,
 		http.StatusOK,
-		models.LoginResponse{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			TokenType:    "Bearer",
-			ExpiresIn:    900,
-		},
+		response,
 	)
 }
 
