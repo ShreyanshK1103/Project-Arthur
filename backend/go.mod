@@ -9,6 +9,7 @@ require (
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/cors v1.2.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
+	github.com/google/go-github/v69 v69.2.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.12.1
@@ -33,4 +34,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.2 // indirect
 	github.com/aws/smithy-go v1.27.1 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 )

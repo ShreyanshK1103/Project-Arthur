@@ -44,6 +44,7 @@ func main() {
 
 	v1Router.Get("/healthz", handlers.HandlerReadiness)
 	v1Router.Get("/auth/github/login", apiCfg.HandlerGithubLogin)
+	v1Router.Get("/auth/github/callback", apiCfg.HandlerGithubCallback)
 	v1Router.With(auth.MiddleWare).Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
 	v1Router.With(auth.MiddleWare).Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
 	v1Router.With(auth.MiddleWare).Get("/projects/{id}/deployments", apiCfg.HandlerGetProjectDeployment)
