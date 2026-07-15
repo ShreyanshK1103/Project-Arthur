@@ -47,6 +47,7 @@ func main() {
 	v1Router.Post("/github/webhook", apiCfg.HandlerGithubWebhook)
 	v1Router.Post("/auth/register", apiCfg.HandlerRegister)
 	v1Router.Post("/auth/login", apiCfg.HandlerLogin)
+	v1Router.Post("/auth/refresh", apiCfg.HandlerRefresh)
 
 	router.Mount("/v1", v1Router)
 

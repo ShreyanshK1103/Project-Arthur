@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
@@ -198,7 +199,7 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Success
-	token, err := auth.GenerateAccessToken(user.ID)
+	accessToken, err := auth.GenerateAccessToken(user.ID)
 
 	if err != nil {
 		respondWithError(
@@ -209,13 +210,36 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refreshToken, err := auth.GenerateRefreshToken()
+
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"failed to generate refresh token",
+		)
+		return
+	}
+
+	hashedRefreshToken := auth.HashRefreshToken(refreshToken)
+
+	_, err = cfg.DB.CreateRefreshToken(
+		r.Context(),
+		database.CreateRefreshTokenParams{
+			UserID:    user.ID,
+			TokenHash: hashedRefreshToken,
+			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+		},
+	)
+
 	respondWithJSON(
 		w,
 		http.StatusOK,
 		models.LoginResponse{
-			AccessToken: token,
-			TokenType:   "Bearer",
-			ExpiresIn:   900,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			TokenType:    "Bearer",
+			ExpiresIn:    900,
 		},
 	)
 }
@@ -251,4 +275,87 @@ func (cfg *Config) HandlerMe(w http.ResponseWriter, r *http.Request) {
 		http.StatusOK,
 		models.UserToResponse(user),
 	)
+}
+
+func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
+	var req models.RefreshRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusBadRequest,
+			fmt.Sprintf("Invalid JSON: %v", err),
+		)
+		return
+	}
+
+	if req.RefreshToken == "" {
+		respondWithError(
+			w,
+			http.StatusBadRequest,
+			"Refresh token is required",
+		)
+		return
+	}
+
+	hashedToken := auth.HashRefreshToken(
+		req.RefreshToken,
+	)
+	refreshToken, err := cfg.DB.GetRefreshTokenByHash(
+		r.Context(),
+		hashedToken,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(
+				w,
+				http.StatusUnauthorized,
+				"Invalid refresh token",
+			)
+			return
+		}
+
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Database error",
+		)
+		return
+	}
+
+	if refreshToken.ExpiresAt.Before(time.Now()) {
+		respondWithError(
+			w,
+			http.StatusUnauthorized,
+			"Refresh token expired",
+		)
+		return
+	}
+
+	accessToken, err := auth.GenerateAccessToken(
+		refreshToken.UserID,
+	)
+
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Couldn't generate access token",
+		)
+
+		return
+	}
+
+	respondWithJSON(
+		w,
+		http.StatusOK,
+		models.RefreshResponse{
+			AccessToken: accessToken,
+			TokenType:   "Bearer",
+			ExpiresIn:   900,
+		},
+	)
+
 }

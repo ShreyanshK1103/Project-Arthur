@@ -230,4 +230,3 @@ func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request
 		),
 	)
 }
-
