@@ -170,13 +170,6 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 				http.StatusUnauthorized,
 				"invalid email or password",
 			)
-		}
-		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(
-				w,
-				http.StatusUnauthorized,
-				"Invalid email or password",
-			)
 			return
 		}
 
@@ -231,6 +224,14 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
 		},
 	)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Couldn't save refresh token",
+		)
+		return
+	}
 
 	respondWithJSON(
 		w,
@@ -324,7 +325,7 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-
+	// CHECKS IF THE TOKEN IS EXPIRED OR NOT 
 	if refreshToken.ExpiresAt.Before(time.Now()) {
 		respondWithError(
 			w,
@@ -333,7 +334,56 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+	// DELETE THE OLD REFRESH TOKEN
+	err = cfg.DB.DeleteRefreshToken(
+		r.Context(),
+		hashedToken,
+	)
 
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Couldn't rotate refresh token",
+		)
+		return
+	}
+	// GENERATE A NEW REFRESH TOKEN
+	newRefreshToken, err := auth.GenerateRefreshToken()
+
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Couldn't generate refresh token",
+		)
+		return
+	}
+	// HASHING THE NEWLY GENERATED TOKEN
+	newRefreshTokenHash := auth.HashRefreshToken(
+		newRefreshToken,
+	)
+	// STORING THIS NEWLY MADE TOKEN
+	_, err = cfg.DB.CreateRefreshToken(
+		r.Context(),
+		database.CreateRefreshTokenParams{
+			UserID: refreshToken.UserID,
+			TokenHash: newRefreshTokenHash,
+			ExpiresAt: time.Now().Add(
+				7 * 24 * time.Hour,
+			),
+		},
+	)
+
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Couldn't store refresh token",
+		)
+		return
+	}
+	// GENERATING THE ACCESS TOKEN
 	accessToken, err := auth.GenerateAccessToken(
 		refreshToken.UserID,
 	)
@@ -353,6 +403,7 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		http.StatusOK,
 		models.RefreshResponse{
 			AccessToken: accessToken,
+			RefreshToken: newRefreshToken,
 			TokenType:   "Bearer",
 			ExpiresIn:   900,
 		},
