@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/handlers"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/oauth"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 )
@@ -16,6 +18,11 @@ import (
 func main() {
 
 	conn, portString, err := config.ConnectDB()
+	oauth.InitGithubOAuth(
+		os.Getenv("GITHUB_CLIENT_ID"),
+		os.Getenv("GITHUB_CLIENT_SECRET"),
+		os.Getenv("GITHUB_CALLBACK_URL"),
+	)
 	db := database.New(conn)
 
 	apiCfg := handlers.Config{
@@ -36,6 +43,7 @@ func main() {
 	v1Router := chi.NewRouter()
 
 	v1Router.Get("/healthz", handlers.HandlerReadiness)
+	v1Router.Get("/auth/github/login", apiCfg.HandlerGithubLogin)
 	v1Router.With(auth.MiddleWare).Get("/deployments/{id}", apiCfg.HandlerGetDeployment)
 	v1Router.With(auth.MiddleWare).Get("/deployments/{id}/logs", apiCfg.HandlerGetDeploymentLogs)
 	v1Router.With(auth.MiddleWare).Get("/projects/{id}/deployments", apiCfg.HandlerGetProjectDeployment)

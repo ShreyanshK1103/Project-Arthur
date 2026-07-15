@@ -325,7 +325,7 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	// CHECKS IF THE TOKEN IS EXPIRED OR NOT 
+	// CHECKS IF THE TOKEN IS EXPIRED OR NOT
 	if refreshToken.ExpiresAt.Before(time.Now()) {
 		respondWithError(
 			w,
@@ -367,7 +367,7 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 	_, err = cfg.DB.CreateRefreshToken(
 		r.Context(),
 		database.CreateRefreshTokenParams{
-			UserID: refreshToken.UserID,
+			UserID:    refreshToken.UserID,
 			TokenHash: newRefreshTokenHash,
 			ExpiresAt: time.Now().Add(
 				7 * 24 * time.Hour,
@@ -402,10 +402,10 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		w,
 		http.StatusOK,
 		models.RefreshResponse{
-			AccessToken: accessToken,
+			AccessToken:  accessToken,
 			RefreshToken: newRefreshToken,
-			TokenType:   "Bearer",
-			ExpiresIn:   900,
+			TokenType:    "Bearer",
+			ExpiresIn:    900,
 		},
 	)
 
@@ -455,7 +455,7 @@ func (cfg *Config) HandlerLogout(w http.ResponseWriter, r *http.Request) {
 		w,
 		http.StatusOK,
 		map[string]string{
-			"message":"Logged out successfully",
+			"message": "Logged out successfully",
 		},
 	)
 }
