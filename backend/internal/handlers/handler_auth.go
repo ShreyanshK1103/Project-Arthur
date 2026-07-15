@@ -359,3 +359,52 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 	)
 
 }
+
+func (cfg *Config) HandlerLogout(w http.ResponseWriter, r *http.Request) {
+	var req models.LogoutRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusBadRequest,
+			"Invalid JSON",
+		)
+		return
+	}
+
+	if req.RefreshToken == "" {
+		respondWithError(
+			w,
+			http.StatusBadRequest,
+			"Refresh token required",
+		)
+		return
+	}
+
+	hash := auth.HashRefreshToken(
+		req.RefreshToken,
+	)
+
+	err = cfg.DB.DeleteRefreshToken(
+		r.Context(),
+		hash,
+	)
+
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"Logout failed",
+		)
+		return
+	}
+
+	respondWithJSON(
+		w,
+		http.StatusOK,
+		map[string]string{
+			"message":"Logged out successfully",
+		},
+	)
+}
