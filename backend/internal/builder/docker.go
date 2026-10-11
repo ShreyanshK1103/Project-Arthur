@@ -56,7 +56,7 @@ func InstallDependencies(command string, job database.Deployment, db *database.Q
 	return nil
 }
 
-func BuildProject(job database.Deployment, db *database.Queries, projectPath string) error {
+func BuildProject(command string, job database.Deployment, db *database.Queries, projectPath string) error {
 	log.Println("Building project.....")
 	logs.AddLog(
 		db,
@@ -71,9 +71,7 @@ func BuildProject(job database.Deployment, db *database.Queries, projectPath str
 		"-v", projectPath+":/app",
 		"-w", "/app",
 		"node:24",
-		"npm",
-		"run",
-		"build",
+		"sh", "-c", command,
 	)
 	output, err := cmd.CombinedOutput()
 

@@ -56,7 +56,11 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 	}
 
 	// -------------------------BUILDING THE PROJECT -----------------------------
-	err = builder.BuildProject(job, db, projectPath)
+	buildCmd := project.BuildCommand
+	if buildCmd == "" {
+		buildCmd = "npm run build"
+	}
+	err = builder.BuildProject(buildCmd, job, db, projectPath)
 	if err != nil {
 		return err
 	}
