@@ -3,13 +3,27 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/models"
 )
 
 func (cfg *Config) HandlerGithubWebhook(w http.ResponseWriter, r *http.Request) {
+
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+	if err != nil {
+		respondWithError(w, http.StatusRequestEntityTooLarge, "payload too large")
+		return
+	}
+
+	if !validGithubSignature(body, r.Header.Get("X-Hub-Signature-256")) {
+		log.Println("github webhook: invalid or missing signature")
+		respondWithError(w, http.StatusUnauthorized, "invalid signature")
+		return
+	}
 
 	event := r.Header.Get("X-GitHub-Event")
 
@@ -37,12 +51,13 @@ func (cfg *Config) HandlerGithubWebhook(w http.ResponseWriter, r *http.Request) 
 			ID int64 `json:"id"`
 		} `json:"repository"`
 
-		Ref string `json:"ref"`
+		Ref     string `json:"ref"`
+		Deleted bool   `json:"deleted"`
 	}
 
 	payload := GithubPayload{}
 
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		respondWithError(
 			w,
@@ -50,6 +65,10 @@ func (cfg *Config) HandlerGithubWebhook(w http.ResponseWriter, r *http.Request) 
 			"invalid payload",
 		)
 
+		return
+	}
+	if payload.Deleted {
+		respondWithJSON(w, 200, map[string]string{"message": "branch deletion ignored"})
 		return
 	}
 
@@ -120,7 +139,7 @@ func (cfg *Config) HandlerGithubWebhook(w http.ResponseWriter, r *http.Request) 
 
 	respondWithJSON(
 		w,
-		201,
-		deployment,
+		202,
+		models.DeploymentToResponse(deployment),
 	)
 }
