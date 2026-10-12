@@ -64,6 +64,10 @@ func main() {
 	v1Router.Post("/auth/refresh", apiCfg.HandlerRefresh)
 	v1Router.Post("/auth/logout", apiCfg.HandlerLogout)
 
+	v1Router.With(auth.MiddleWare).Get("/projects/{id}/env", apiCfg.HandlerListEnvVars)
+	v1Router.With(auth.MiddleWare).Put("/projects/{id}/env", apiCfg.HandlerSetEnvVar)
+	v1Router.With(auth.MiddleWare).Delete("/projects/{id}/env/{key}", apiCfg.HandlerDeleteEnvVar)
+
 	router.Mount("/v1", v1Router)
 
 	// THIS ROUTE SERVES THE WEBSITE USING THE SUBDOMAIN APPROACH

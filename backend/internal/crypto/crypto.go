@@ -12,20 +12,20 @@ import (
 
 var key []byte
 
-// Init loads ENV_ENCRIPTION_KEY (base64-encoded, 32 bytes).
+// Init loads ENV_ENCRYPTION_KEY (base64-encoded, 32 bytes).
 func Init() error {
-	raw := os.Getenv("ENV_ENCRIPTION_KEY")
+	raw := os.Getenv("ENV_ENCRYPTION_KEY")
 	if raw == "" {
-		return errors.New("ENV_ENCRIPTION_KEY is not set")
+		return errors.New("ENV_ENCRYPTION_KEY is not set")
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {
-		return fmt.Errorf("ENV_ENCRIPTION_KEY is not valid base64: %w", err)
+		return fmt.Errorf("ENV_ENCRYPTION_KEY is not valid base64: %w", err)
 	}
 
 	if len(decoded) != 32 {
-		return fmt.Errorf("ENV_ENCRIPTION_KEY must decode to 32 bytes, got %d", len(decoded))
+		return fmt.Errorf("ENV_ENCRYPTION_KEY must decode to 32 bytes, got %d", len(decoded))
 	}
 
 	key = decoded
