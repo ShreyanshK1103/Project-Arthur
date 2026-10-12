@@ -8,6 +8,7 @@ import (
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/crypto"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/handlers"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/oauth"
@@ -18,6 +19,10 @@ import (
 func main() {
 
 	conn, portString, err := config.ConnectDB()
+	// Calls the crypto Logic so that it runs first
+	if err := crypto.Init(); err != nil {
+		log.Fatal(err)
+	}
 	oauth.InitGithubOAuth(
 		os.Getenv("GITHUB_CLIENT_ID"),
 		os.Getenv("GITHUB_CLIENT_SECRET"),
@@ -58,6 +63,10 @@ func main() {
 	v1Router.Post("/auth/login", apiCfg.HandlerLogin)
 	v1Router.Post("/auth/refresh", apiCfg.HandlerRefresh)
 	v1Router.Post("/auth/logout", apiCfg.HandlerLogout)
+
+	v1Router.With(auth.MiddleWare).Get("/projects/{id}/env", apiCfg.HandlerListEnvVars)
+	v1Router.With(auth.MiddleWare).Put("/projects/{id}/env", apiCfg.HandlerSetEnvVar)
+	v1Router.With(auth.MiddleWare).Delete("/projects/{id}/env/{key}", apiCfg.HandlerDeleteEnvVar)
 
 	router.Mount("/v1", v1Router)
 

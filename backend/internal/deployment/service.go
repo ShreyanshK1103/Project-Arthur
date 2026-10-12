@@ -41,6 +41,19 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 		return err
 	}
 
+	env, err := builder.LoadEnvVars(context.Background(), db, project.ID)
+	if err != nil {
+		logs.AddLog(db, job.ID,  "Failed to load environment variables")
+		return err
+	}
+
+	envFile, cleanupEnv, err := env.WriteEnvFile()
+	if err != nil {
+		logs.AddLog(db, job.ID, "Failed to prepare environment variables")
+		return err
+	}
+	defer cleanupEnv()
+
 	// --------------------------CLONING THE REPO ---------------------------------------
 
 	err = builder.CloneRepo(project.RepoUrl, job, db, projectPath)
@@ -50,7 +63,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 
 	// ------------------------- INSTALLING THE PROJECT DEPENDENCIES --------------------------------
 
-	err = builder.InstallDependencies(project.InstallCommand, job, db, projectPath)
+	err = builder.InstallDependencies(project.InstallCommand, env, envFile, job, db, projectPath)
 	if err != nil {
 		return err
 	}
@@ -60,7 +73,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 	if buildCmd == "" {
 		buildCmd = "npm run build"
 	}
-	err = builder.BuildProject(buildCmd, job, db, projectPath)
+	err = builder.BuildProject(buildCmd, env, envFile, job, db, projectPath)
 	if err != nil {
 		return err
 	}

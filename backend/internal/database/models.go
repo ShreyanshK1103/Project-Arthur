@@ -51,6 +51,15 @@ type Project struct {
 	AutoDeploy     bool
 }
 
+type ProjectEnvVar struct {
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Key            string
+	ValueEncrypted []byte
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type RefreshToken struct {
 	ID        uuid.UUID
 	UserID    uuid.UUID
