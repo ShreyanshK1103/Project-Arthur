@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/crypto"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/deployment"
 )
@@ -13,6 +14,10 @@ import (
 func main() {
 	conn, _, err := config.ConnectDB()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := crypto.Init(); err != nil {
 		log.Fatal(err)
 	}
 

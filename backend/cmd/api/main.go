@@ -8,6 +8,7 @@ import (
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/crypto"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/handlers"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/oauth"
@@ -18,6 +19,10 @@ import (
 func main() {
 
 	conn, portString, err := config.ConnectDB()
+	// Calls the crypto Logic so that it runs first
+	if err := crypto.Init(); err != nil {
+		log.Fatal(err)
+	}
 	oauth.InitGithubOAuth(
 		os.Getenv("GITHUB_CLIENT_ID"),
 		os.Getenv("GITHUB_CLIENT_SECRET"),
