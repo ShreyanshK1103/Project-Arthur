@@ -9,8 +9,8 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/models"
 )
 
-func (cfg *Config) CreateLoginSession (ctx context.Context, user database.User) (models.LoginResponse, error) {
-	accessToken , err := auth.GenerateAccessToken(user.ID)
+func (cfg *Config) CreateLoginSession(ctx context.Context, user database.User) (models.LoginResponse, error) {
+	accessToken, err := auth.GenerateAccessToken(user.ID)
 	if err != nil {
 		return models.LoginResponse{}, err
 	}
@@ -25,7 +25,7 @@ func (cfg *Config) CreateLoginSession (ctx context.Context, user database.User) 
 	_, err = cfg.DB.CreateRefreshToken(
 		ctx,
 		database.CreateRefreshTokenParams{
-			UserID: user.ID,
+			UserID:    user.ID,
 			TokenHash: hashedRefreshToken,
 			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
 		},
@@ -36,9 +36,9 @@ func (cfg *Config) CreateLoginSession (ctx context.Context, user database.User) 
 	}
 
 	return models.LoginResponse{
-		AccessToken: accessToken,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		TokenType: "Bearer",
-		ExpiresIn: 900,
+		TokenType:    "Bearer",
+		ExpiresIn:    900,
 	}, nil
 }

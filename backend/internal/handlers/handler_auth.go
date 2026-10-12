@@ -198,15 +198,23 @@ func (cfg *Config) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"Couldn't create login session",
+			"Couldn't create a login session",
 		)
 		return
 	}
 
+	SetAuthCookies(
+		w,
+		response.AccessToken,
+		response.RefreshToken,
+	)
+
 	respondWithJSON(
 		w,
 		http.StatusOK,
-		response,
+		map[string]string{
+			"message": "Logged in successfully",
+		},
 	)
 }
 
@@ -244,30 +252,34 @@ func (cfg *Config) HandlerMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
-	var req models.RefreshRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	// Get refresh token from HttpOnly cookie
+	cookie, err := r.Cookie(RefreshTokenCookie)
+
 	if err != nil {
 		respondWithError(
 			w,
-			http.StatusBadRequest,
-			fmt.Sprintf("Invalid JSON: %v", err),
+			http.StatusUnauthorized,
+			"refresh token missing",
 		)
 		return
 	}
 
-	if req.RefreshToken == "" {
+	rawRefreshToken := cookie.Value
+
+	if rawRefreshToken == "" {
 		respondWithError(
 			w,
-			http.StatusBadRequest,
-			"Refresh token is required",
+			http.StatusUnauthorized,
+			"refresh token missing",
 		)
 		return
 	}
 
-	hashedToken := auth.HashRefreshToken(
-		req.RefreshToken,
-	)
+	// Hash the raw token so we can look it up in the DB
+	hashedToken := auth.HashRefreshToken(rawRefreshToken)
+
+	// Find refresh token in DB
 	refreshToken, err := cfg.DB.GetRefreshTokenByHash(
 		r.Context(),
 		hashedToken,
@@ -275,10 +287,11 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			ClearAuthCookies(w)
 			respondWithError(
 				w,
 				http.StatusUnauthorized,
-				"Invalid refresh token",
+				"invalid refresh token",
 			)
 			return
 		}
@@ -286,20 +299,31 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"Database error",
+			"database error",
 		)
 		return
 	}
-	// CHECKS IF THE TOKEN IS EXPIRED OR NOT
+
+	// Check expiration
 	if refreshToken.ExpiresAt.Before(time.Now()) {
+
+		// Remove expired token
+		_ = cfg.DB.DeleteRefreshToken(
+			r.Context(),
+			hashedToken,
+		)
+
+		ClearAuthCookies(w)
+
 		respondWithError(
 			w,
 			http.StatusUnauthorized,
-			"Refresh token expired",
+			"refresh token expired",
 		)
 		return
 	}
-	// DELETE THE OLD REFRESH TOKEN
+
+	// Delete old refresh token
 	err = cfg.DB.DeleteRefreshToken(
 		r.Context(),
 		hashedToken,
@@ -309,34 +333,35 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"Couldn't rotate refresh token",
+			"couldn't rotate refresh token",
 		)
 		return
 	}
-	// GENERATE A NEW REFRESH TOKEN
+
+	// Generate new refresh token
 	newRefreshToken, err := auth.GenerateRefreshToken()
 
 	if err != nil {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"Couldn't generate refresh token",
+			"couldn't generate refresh token",
 		)
 		return
 	}
-	// HASHING THE NEWLY GENERATED TOKEN
+
+	// Hash new refresh token
 	newRefreshTokenHash := auth.HashRefreshToken(
 		newRefreshToken,
 	)
-	// STORING THIS NEWLY MADE TOKEN
+
+	// Store new refresh token
 	_, err = cfg.DB.CreateRefreshToken(
 		r.Context(),
 		database.CreateRefreshTokenParams{
 			UserID:    refreshToken.UserID,
 			TokenHash: newRefreshTokenHash,
-			ExpiresAt: time.Now().Add(
-				7 * 24 * time.Hour,
-			),
+			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
 		},
 	)
 
@@ -344,11 +369,12 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"Couldn't store refresh token",
+			"couldn't store refresh token",
 		)
 		return
 	}
-	// GENERATING THE ACCESS TOKEN
+
+	// Generate new access token
 	accessToken, err := auth.GenerateAccessToken(
 		refreshToken.UserID,
 	)
@@ -357,64 +383,54 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"Couldn't generate access token",
+			"couldn't generate access token",
 		)
-
 		return
 	}
+
+	// Replace cookies
+	SetAuthCookies(
+		w,
+		accessToken,
+		newRefreshToken,
+	)
 
 	respondWithJSON(
 		w,
 		http.StatusOK,
-		models.RefreshResponse{
-			AccessToken:  accessToken,
-			RefreshToken: newRefreshToken,
-			TokenType:    "Bearer",
-			ExpiresIn:    900,
+		map[string]string{
+			"message": "token refreshed successfully",
 		},
 	)
-
 }
 
 func (cfg *Config) HandlerLogout(w http.ResponseWriter, r *http.Request) {
-	var req models.LogoutRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		respondWithError(
-			w,
-			http.StatusBadRequest,
-			"Invalid JSON",
+	cookie, err := r.Cookie(RefreshTokenCookie)
+
+	if err == nil && cookie.Value != "" {
+
+		hash := auth.HashRefreshToken(
+			cookie.Value,
 		)
-		return
+
+		err = cfg.DB.DeleteRefreshToken(
+			r.Context(),
+			hash,
+		)
+
+		if err != nil {
+			respondWithError(
+				w,
+				http.StatusInternalServerError,
+				"logout failed",
+			)
+			return
+		}
 	}
 
-	if req.RefreshToken == "" {
-		respondWithError(
-			w,
-			http.StatusBadRequest,
-			"Refresh token required",
-		)
-		return
-	}
-
-	hash := auth.HashRefreshToken(
-		req.RefreshToken,
-	)
-
-	err = cfg.DB.DeleteRefreshToken(
-		r.Context(),
-		hash,
-	)
-
-	if err != nil {
-		respondWithError(
-			w,
-			http.StatusInternalServerError,
-			"Logout failed",
-		)
-		return
-	}
+	// Remove cookies from browser
+	ClearAuthCookies(w)
 
 	respondWithJSON(
 		w,
