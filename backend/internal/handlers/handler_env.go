@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/auth"
@@ -105,6 +106,11 @@ func (cfg *Config) HandlerSetEnvVar(w http.ResponseWriter, r *http.Request) {
 
 	if len(params.Value) > maxEnvValueLen {
 		respondWithError(w, http.StatusBadRequest, "value is too long (max 4096 bytes)")
+		return
+	}
+
+	if strings.ContainsAny(params.Value, "\r\n\x00") {
+		respondWithError(w, http.StatusBadRequest, "value cannot contain newlines")
 		return
 	}
 
