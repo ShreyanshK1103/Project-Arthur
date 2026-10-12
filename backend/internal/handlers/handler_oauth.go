@@ -119,7 +119,7 @@ func (cfg *Config) HandlerGithubCallback(w http.ResponseWriter, r *http.Request)
 	user, err := cfg.DB.GetUserByOAuth(
 		r.Context(),
 		database.GetUserByOAuthParams{
-			Provider: provider,
+			Provider:   provider,
 			ProviderID: providerID,
 		},
 	)
@@ -141,8 +141,8 @@ func (cfg *Config) HandlerGithubCallback(w http.ResponseWriter, r *http.Request)
 				_, err = cfg.DB.CreateOAuthAccount(
 					r.Context(),
 					database.CreateOAuthAccountParams{
-						UserID: existingUser.ID,
-						Provider: provider,
+						UserID:     existingUser.ID,
+						Provider:   provider,
 						ProviderID: providerID,
 					},
 				)
@@ -170,14 +170,14 @@ func (cfg *Config) HandlerGithubCallback(w http.ResponseWriter, r *http.Request)
 				user, err = cfg.DB.CreateUser(
 					r.Context(),
 					database.CreateUserParams{
-						Name: name,
+						Name:  name,
 						Email: email,
 
 						PasswordHash: sql.NullString{},
 
 						AvatarUrl: sql.NullString{
 							String: githubUser.GetAvatarURL(),
-							Valid: true,
+							Valid:  true,
 						},
 
 						EmailVerified: true,
@@ -196,8 +196,8 @@ func (cfg *Config) HandlerGithubCallback(w http.ResponseWriter, r *http.Request)
 				_, err = cfg.DB.CreateOAuthAccount(
 					r.Context(),
 					database.CreateOAuthAccountParams{
-						UserID: user.ID,
-						Provider: provider,
+						UserID:     user.ID,
+						Provider:   provider,
 						ProviderID: providerID,
 					},
 				)
@@ -248,14 +248,16 @@ func (cfg *Config) HandlerGithubCallback(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	SetAuthCookies(
+		w,
+		response.AccessToken,
+		response.RefreshToken,
+	)
+
 	http.Redirect(
 		w,
 		r,
-		fmt.Sprintf(
-			"http://localhost:5173/auth/callback?access=%s&refresh=%s",
-			response.AccessToken,
-			response.RefreshToken,
-		),
+		"http://localhost:5173/",
 		http.StatusTemporaryRedirect,
 	)
 }

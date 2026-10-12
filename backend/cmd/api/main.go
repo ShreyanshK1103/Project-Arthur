@@ -32,11 +32,11 @@ func main() {
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedOrigins:   []string{"http://localhost:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
+		ExposedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
