@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,17 +15,29 @@ import (
 )
 
 func (cfg *Config) HandlerGithubLogin(w http.ResponseWriter, r *http.Request) {
-	url := oauth.GithubConfig.AuthCodeURL("state")
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		respondWithError(w, 500, "could not start login")
+		return
+	}
+	state := hex.EncodeToString(b)
 
-	http.Redirect(
-		w,
-		r,
-		url,
-		http.StatusTemporaryRedirect,
-	)
+	http.SetCookie(w, &http.Cookie{
+		Name: "oauth_state", Value: state, Path: "/v1/auth/github",
+		MaxAge: 600, HttpOnly: true, Secure: false, SameSite: http.SameSiteLaxMode,
+	})
+
+	http.Redirect(w, r, oauth.GithubConfig.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
 
 func (cfg *Config) HandlerGithubCallback(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie("oauth_state")
+	if err != nil || c.Value == "" || c.Value != r.URL.Query().Get("state") {
+		respondWithError(w, http.StatusBadRequest, "invalid oauth state")
+		return
+	}
+	http.SetCookie(w, &http.Cookie{Name: "oauth_state", Value: "", Path: "/v1/auth/github", MaxAge: -1})
+
 	code := r.URL.Query().Get("code")
 
 	if code == "" {
