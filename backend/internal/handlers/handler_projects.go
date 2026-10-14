@@ -177,8 +177,9 @@ func (cfg *Config) HandlerGetProjectDeployment(w http.ResponseWriter, r *http.Re
 	respondWithJSON(
 		w,
 		200,
-		models.DeploymentsToResponse(
+		models.DeploymentForProjectToResponse(
 			deployments,
+			project,
 		),
 	)
 }

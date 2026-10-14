@@ -12,6 +12,7 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/builder"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/logs"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/siteurl"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/storage"
 	"github.com/google/uuid"
 )
@@ -111,11 +112,8 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 	// -----------------------------MARKING SUCCESS OF THE PROJECT DEPLOYMENT --------------------------------
 
 	slug := job.ID.String()[:12]
+	deploymentURL := siteurl.ForSlug(slug)
 
-	deploymentURL := fmt.Sprintf(
-		"http://%s.localhost:8080",
-		slug,
-	)
 	err = db.MarkDeploymentSuccess(
 		context.Background(),
 		database.MarkDeploymentSuccessParams{
