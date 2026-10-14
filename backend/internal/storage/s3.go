@@ -44,6 +44,7 @@ func TestS3Connection() error {
 }
 
 func UploadDirectory(
+	ctx context.Context,
 	deploymentID string,
 	localPath string,
 ) error {
@@ -66,7 +67,9 @@ func UploadDirectory(
 			info os.FileInfo,
 			err error,
 		) error {
-
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			if err != nil {
 				return err
 			}
@@ -109,7 +112,7 @@ func UploadDirectory(
 			}
 
 			_, err = uploader.Upload(
-				context.Background(),
+				ctx,
 				&s3.PutObjectInput{
 					Bucket:      &bucketName,
 					Key:         &s3Key,
