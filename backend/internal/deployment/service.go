@@ -48,7 +48,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 
 	env, err := builder.LoadEnvVars(context.Background(), db, project.ID)
 	if err != nil {
-		logs.AddLog(db, job.ID,  "Failed to load environment variables")
+		logs.AddLog(db, job.ID, "Failed to load environment variables")
 		return err
 	}
 
@@ -135,7 +135,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 		return err
 	}
 	err = db.SetActiveDeployment(context.Background(), database.SetActiveDeploymentParams{
-		ID: project.ID,
+		ID:                 project.ID,
 		ActiveDeploymentID: uuid.NullUUID{UUID: job.ID, Valid: true},
 	})
 	if err != nil {
