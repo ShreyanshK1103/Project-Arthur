@@ -63,3 +63,11 @@ JOIN projects p
 ON d.project_id = p.id
 WHERE d.id = $1
 AND p.user_id = $2;
+
+-- name: FailStaleDeployments :many
+UPDATE deployments
+SET status = 'failed',
+    updated_at = NOW()
+WHERE status = 'building'
+AND updated_at < NOW() - ($1::int * INTERVAL '1 minute')
+RETURNING id;
