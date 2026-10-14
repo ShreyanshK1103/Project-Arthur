@@ -37,6 +37,38 @@ func (q *Queries) CreateDeployment(ctx context.Context, arg CreateDeploymentPara
 	return i, err
 }
 
+const failStaleDeployments = `-- name: FailStaleDeployments :many
+UPDATE deployments
+SET status = 'failed',
+    updated_at = NOW()
+WHERE status = 'building'
+AND updated_at < NOW() - ($1::int * INTERVAL '1 minute')
+RETURNING id
+`
+
+func (q *Queries) FailStaleDeployments(ctx context.Context, dollar_1 int32) ([]uuid.UUID, error) {
+	rows, err := q.db.QueryContext(ctx, failStaleDeployments, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDeploymentByID = `-- name: GetDeploymentByID :one
 SELECT id, project_id, status, url, created_at, updated_at FROM deployments
 WHERE id = $1
