@@ -15,13 +15,13 @@ import (
 
 const (
 	containerMemory = "2g"
-	containerCPUs = "2"
-	containerPIDs = "512"
-	stepTimeout = 20 * time.Minute
+	containerCPUs   = "2"
+	containerPIDs   = "512"
+	stepTimeout     = 20 * time.Minute
 )
 
 // runInContainer runs a shell command in a node container with resource limits,
-// a non-root user and a hard timeout, name must be unique per run 
+// a non-root user and a hard timeout, name must be unique per run
 func runInContainer(parent context.Context, name, projectPath, envFile, command string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(parent, stepTimeout)
 	defer cancel()
