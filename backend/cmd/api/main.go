@@ -58,6 +58,7 @@ func main() {
 	v1Router.With(auth.MiddleWare).Post("/deployments", apiCfg.HandlerCreateDeployment)
 	v1Router.With(auth.MiddleWare).Post("/projects", apiCfg.HandlerCreateProject)
 	v1Router.With(auth.MiddleWare).Post("/projects/{id}/redeploy", apiCfg.HandlerRedeployProject)
+	v1Router.With(auth.MiddleWare).Post("/projects/{id}/deployments/{deploymentID}/promote", apiCfg.HandlerPromoteDeployment)
 	v1Router.Post("/github/webhook", apiCfg.HandlerGithubWebhook)
 	v1Router.Post("/auth/register", apiCfg.HandlerRegister)
 	v1Router.Post("/auth/login", apiCfg.HandlerLogin)

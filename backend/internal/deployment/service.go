@@ -12,7 +12,9 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/builder"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/logs"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/siteurl"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/storage"
+	"github.com/google/uuid"
 )
 
 const deploymentTimeout = 20 * time.Minute
@@ -47,7 +49,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 
 	env, err := builder.LoadEnvVars(context.Background(), db, project.ID)
 	if err != nil {
-		logs.AddLog(db, job.ID,  "Failed to load environment variables")
+		logs.AddLog(db, job.ID, "Failed to load environment variables")
 		return err
 	}
 
@@ -110,11 +112,8 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 	// -----------------------------MARKING SUCCESS OF THE PROJECT DEPLOYMENT --------------------------------
 
 	slug := job.ID.String()[:12]
+	deploymentURL := siteurl.ForSlug(slug)
 
-	deploymentURL := fmt.Sprintf(
-		"http://%s.localhost:8080",
-		slug,
-	)
 	err = db.MarkDeploymentSuccess(
 		context.Background(),
 		database.MarkDeploymentSuccessParams{
@@ -133,7 +132,15 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 		)
 		return err
 	}
-
+	err = db.SetActiveDeployment(context.Background(), database.SetActiveDeploymentParams{
+		ID:                 project.ID,
+		ActiveDeploymentID: uuid.NullUUID{UUID: job.ID, Valid: true},
+	})
+	if err != nil {
+		// Build succeeded and is reachable by its own URL; don't flip it to failed over this
+		logs.AddLog(db, job.ID, "Deployed, but failed to update the project's live URL")
+		log.Printf("failed to set active deployment for project %s: %v", project.ID, err)
+	}
 	logs.AddLog(
 		db,
 		job.ID,

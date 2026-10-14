@@ -23,7 +23,7 @@ func main() {
 
 	db := database.New(conn)
 
-	go deployment.StartReaper(context.Background(),db)
+	go deployment.StartReaper(context.Background(), db)
 
 	for {
 		job, err := db.GetNextDeployment(context.Background())

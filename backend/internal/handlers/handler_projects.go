@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -77,26 +78,43 @@ func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) 
 	if params.AutoDeploy != nil {
 		autoDeploy = *params.AutoDeploy
 	}
-	project, err := cfg.DB.CreateProject(
-		r.Context(),
-		database.CreateProjectParams{
-			Name:           params.Name,
-			UserID:         userID,
-			RepoUrl:        params.RepoUrl,
-			InstallCommand: params.InstallCommand,
-			BuildCommand:   params.BuildCommand,
-			OutputDir:      params.OutputDir,
-			GithubRepoID:   githubRepoID,
-			Branch:         params.Branch,
-			AutoDeploy:     autoDeploy,
-		},
-	)
+	var project database.Project
+	var createErr error
 
-	if err != nil {
+	for attempt := 0; attempt < 5; attempt++ {
+		slug, err := newSlug(params.Name)
+		if err != nil {
+			respondWithError(w, 500, "Cannot generate project slug")
+			return
+		}
+
+		project, createErr = cfg.DB.CreateProject(
+			r.Context(),
+			database.CreateProjectParams{
+				Name:           params.Name,
+				UserID:         userID,
+				RepoUrl:        params.RepoUrl,
+				InstallCommand: params.InstallCommand,
+				BuildCommand:   params.BuildCommand,
+				OutputDir:      params.OutputDir,
+				GithubRepoID:   githubRepoID,
+				Branch:         params.Branch,
+				AutoDeploy:     autoDeploy,
+				Slug:           slug,
+			},
+		)
+
+		// retry only if the slug collided with an existing one
+		if createErr == nil || !isUniqueViolation(createErr) {
+			break
+		}
+	}
+
+	if createErr != nil {
 		respondWithError(
 			w,
 			500,
-			fmt.Sprintf("Cannot create project: %v", err),
+			fmt.Sprintf("Cannot create project: %v", createErr),
 		)
 		return
 	}
@@ -160,8 +178,9 @@ func (cfg *Config) HandlerGetProjectDeployment(w http.ResponseWriter, r *http.Re
 	respondWithJSON(
 		w,
 		200,
-		models.DeploymentsToResponse(
+		models.DeploymentForProjectToResponse(
 			deployments,
+			project,
 		),
 	)
 }
@@ -229,4 +248,57 @@ func (cfg *Config) HandlerRedeployProject(w http.ResponseWriter, r *http.Request
 			deployment,
 		),
 	)
+}
+
+// HandlerPromoteDeployment makes an older successful deployment the live one
+// for the project. Nothing is rebuilt: the files are already in S3.
+func (cfg *Config) HandlerPromoteDeployment(w http.ResponseWriter, r *http.Request) {
+	projectID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondWithError(w, 400, "Invalid project id")
+		return
+	}
+
+	deploymentID, err := uuid.Parse(chi.URLParam(r, "deploymentID"))
+	if err != nil {
+		respondWithError(w, 400, "Invalid deployment id")
+		return
+	}
+
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, 401, "unauthorized")
+		return
+	}
+
+	// One statement checks: project is yours, deployment belongs to that
+	// project, and the deployment succeeded. Any miss - no row.
+	_, err = cfg.DB.PromoteDeployment(
+		r.Context(),
+		database.PromoteDeploymentParams{
+			ID:     projectID,
+			UserID: userID,
+			ID_2:   deploymentID,
+		},
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		respondWithError(w, 404, "deployment not found for this project, or it did not succeed")
+		return
+	}
+	if err != nil {
+		respondWithError(w, 500, "Failed to promote deployment")
+		return
+	}
+
+	// Return the updated project so the client sees the new active_deployment_id
+	project, err := cfg.DB.GetProjectByIDAndUser(
+		r.Context(),
+		database.GetProjectByIDAndUserParams{ID: projectID, UserID: userID},
+	)
+	if err != nil {
+		respondWithError(w, 500, "Promoted, but failed to load project")
+		return
+	}
+
+	respondWithJSON(w, 200, models.ProjectToResponse(project))
 }

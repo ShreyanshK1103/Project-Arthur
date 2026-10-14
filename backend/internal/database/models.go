@@ -37,18 +37,20 @@ type OauthAccount struct {
 }
 
 type Project struct {
-	ID             uuid.UUID
-	Name           string
-	UserID         uuid.UUID
-	CreatedAt      time.Time
-	InstallCommand string
-	BuildCommand   string
-	OutputDir      string
-	RepoUrl        string
-	UpdatedAt      time.Time
-	GithubRepoID   sql.NullInt64
-	Branch         string
-	AutoDeploy     bool
+	ID                 uuid.UUID
+	Name               string
+	UserID             uuid.UUID
+	CreatedAt          time.Time
+	InstallCommand     string
+	BuildCommand       string
+	OutputDir          string
+	RepoUrl            string
+	UpdatedAt          time.Time
+	GithubRepoID       sql.NullInt64
+	Branch             string
+	AutoDeploy         bool
+	Slug               string
+	ActiveDeploymentID uuid.NullUUID
 }
 
 type ProjectEnvVar struct {

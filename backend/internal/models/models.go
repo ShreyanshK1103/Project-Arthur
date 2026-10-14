@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/siteurl"
 	"github.com/google/uuid"
 )
 
@@ -19,27 +20,32 @@ type User struct {
 }
 
 type Projects struct {
-	ID             uuid.UUID `json:"project_id"`
-	Name           string    `json:"name"`
-	UserID         uuid.UUID `json:"user_id"`
-	RepoUrl        string    `json:"repo_url"`
-	InstallCommand string    `json:"install_command"`
-	BuildCommand   string    `json:"build_command"`
-	OutputDir      string    `json:"output_dir"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	GithubRepoID   *int64    `json:"github_repo_id"`
-	Branch         string    `json:"branch"`
-	AutoDeploy     bool      `json:"auto_deploy"`
+	ID                 uuid.UUID  `json:"project_id"`
+	Name               string     `json:"name"`
+	UserID             uuid.UUID  `json:"user_id"`
+	RepoUrl            string     `json:"repo_url"`
+	InstallCommand     string     `json:"install_command"`
+	BuildCommand       string     `json:"build_command"`
+	OutputDir          string     `json:"output_dir"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	GithubRepoID       *int64     `json:"github_repo_id"`
+	Branch             string     `json:"branch"`
+	AutoDeploy         bool       `json:"auto_deploy"`
+	Slug               string     `json:"slug"`
+	URL                string     `json:"url"`
+	ActiveDeploymentID *uuid.UUID `json:"active_deployment_id"`
 }
 
 type Deployments struct {
-	ID        uuid.UUID `json:"id"`
-	ProjectID uuid.UUID `json:"project_id"`
-	Status    string    `json:"status"`
-	Url       *string   `json:"url"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         uuid.UUID `json:"id"`
+	ProjectID  uuid.UUID `json:"project_id"`
+	Status     string    `json:"status"`
+	Url        *string   `json:"url"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	ProjectURL string    `json:"project_url,omitempty"`
+	IsActive   *bool     `json:"is_active,omitempty"`
 }
 
 type DeploymentLogsResponse struct {
@@ -79,19 +85,28 @@ func ProjectToResponse(p database.Project) Projects {
 		repoID = &p.GithubRepoID.Int64
 	}
 
+	var activeID *uuid.UUID
+	if p.ActiveDeploymentID.Valid {
+		id := p.ActiveDeploymentID.UUID
+		activeID = &id
+	}
+
 	return Projects{
-		ID:             p.ID,
-		Name:           p.Name,
-		UserID:         p.UserID,
-		RepoUrl:        p.RepoUrl,
-		InstallCommand: p.InstallCommand,
-		BuildCommand:   p.BuildCommand,
-		OutputDir:      p.OutputDir,
-		CreatedAt:      p.CreatedAt,
-		UpdatedAt:      p.UpdatedAt,
-		GithubRepoID:   repoID,
-		Branch:         p.Branch,
-		AutoDeploy:     p.AutoDeploy,
+		ID:                 p.ID,
+		Name:               p.Name,
+		UserID:             p.UserID,
+		RepoUrl:            p.RepoUrl,
+		InstallCommand:     p.InstallCommand,
+		BuildCommand:       p.BuildCommand,
+		OutputDir:          p.OutputDir,
+		CreatedAt:          p.CreatedAt,
+		UpdatedAt:          p.UpdatedAt,
+		GithubRepoID:       repoID,
+		Branch:             p.Branch,
+		AutoDeploy:         p.AutoDeploy,
+		Slug:               p.Slug,
+		URL:                siteurl.ForSlug(p.Slug),
+		ActiveDeploymentID: activeID,
 	}
 }
 
@@ -116,4 +131,19 @@ func UserToResponse(u database.User) User {
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}
+}
+
+func DeploymentForProjectToResponse(deployments []database.Deployment, p database.Project) []Deployments {
+	result := []Deployments{}
+	projectURL := siteurl.ForSlug(p.Slug)
+
+	for _, d := range deployments {
+		resp := DeploymentToResponse(d)
+		active := p.ActiveDeploymentID.Valid && p.ActiveDeploymentID.UUID == d.ID
+		resp.ProjectURL = projectURL
+		resp.IsActive = &active
+		result = append(result, resp)
+	}
+
+	return result
 }
