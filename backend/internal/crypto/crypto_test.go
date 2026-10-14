@@ -8,7 +8,7 @@ import (
 
 func setup(t *testing.T) {
 	t.Helper()
-	t.Setenv("ENV_ENCRIPTION_KEY", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32)))
+	t.Setenv("ENV_ENCRYPTION_KEY", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32)))
 	if err := Init(); err != nil {
 		t.Fatal(err)
 	}

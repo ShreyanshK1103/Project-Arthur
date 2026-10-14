@@ -1,15 +1,17 @@
 package builder
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/logs"
 )
 
-func CloneRepo(repoUrl string, job database.Deployment, db *database.Queries, projectPath string) error {
+func CloneRepo(ctx context.Context, repoUrl string, job database.Deployment, db *database.Queries, projectPath string) error {
 
 	logs.AddLog(
 		db,
@@ -19,12 +21,14 @@ func CloneRepo(repoUrl string, job database.Deployment, db *database.Queries, pr
 
 	log.Printf("Cloning repo: %s", repoUrl)
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		ctx,
 		"git",
 		"clone",
 		repoUrl,
 		projectPath,
 	)
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

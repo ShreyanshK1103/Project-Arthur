@@ -17,13 +17,13 @@ const (
 	containerMemory = "2g"
 	containerCPUs = "2"
 	containerPIDs = "512"
-	stepTimeout = 10 * time.Minute
+	stepTimeout = 20 * time.Minute
 )
 
 // runInContainer runs a shell command in a node container with resource limits,
 // a non-root user and a hard timeout, name must be unique per run 
-func runInContainer(ctx context.Context, name, projectPath, envFile, command string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, stepTimeout)
+func runInContainer(parent context.Context, name, projectPath, envFile, command string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(parent, stepTimeout)
 	defer cancel()
 
 	//Clear any leftover container with this name
@@ -51,9 +51,11 @@ func runInContainer(ctx context.Context, name, projectPath, envFile, command str
 
 	output, err := exec.CommandContext(ctx, "docker", args...).CombinedOutput()
 
-	if ctx.Err() == context.DeadlineExceeded{
-		//Killing the docker CLI does NOT stop the container, so remove it manually
+	if ctx.Err() != nil {
 		exec.Command("docker", "rm", "-f", name).Run()
+		if parent.Err() != nil {
+			return output, errors.New("deployment time limit exceeded")
+		}
 		return output, fmt.Errorf("timed out after %s", stepTimeout)
 	}
 
@@ -64,11 +66,11 @@ func runInContainer(ctx context.Context, name, projectPath, envFile, command str
 
 	return output, err
 }
-func InstallDependencies(command string, env *EnvVars, envFile string, job database.Deployment, db *database.Queries, projectPath string) error {
+func InstallDependencies(ctx context.Context, command string, env *EnvVars, envFile string, job database.Deployment, db *database.Queries, projectPath string) error {
 	log.Println("Installing dependencies.....")
 	logs.AddLog(db, job.ID, "Installing Dependencies.......")
 
-	output, err := runInContainer(context.Background(), fmt.Sprintf("arthur-%s-install", job.ID), projectPath, envFile, command)
+	output, err := runInContainer(ctx, fmt.Sprintf("arthur-%s-install", job.ID), projectPath, envFile, command)
 	if err != nil {
 		safe := env.Redact(string(output))
 		logs.AddLog(db, job.ID, fmt.Sprintf("Install Failed:\n%s", safe))
@@ -80,11 +82,11 @@ func InstallDependencies(command string, env *EnvVars, envFile string, job datab
 	return nil
 }
 
-func BuildProject(command string, env *EnvVars, envFile string, job database.Deployment, db *database.Queries, projectPath string) error {
+func BuildProject(ctx context.Context, command string, env *EnvVars, envFile string, job database.Deployment, db *database.Queries, projectPath string) error {
 	log.Println("Building project.....")
 	logs.AddLog(db, job.ID, "Building the Project.......")
 
-	output, err := runInContainer(context.Background(), fmt.Sprintf("arthur-%s-build", job.ID), projectPath, envFile, command)
+	output, err := runInContainer(ctx, fmt.Sprintf("arthur-%s-build", job.ID), projectPath, envFile, command)
 	if err != nil {
 		safe := env.Redact(string(output))
 		logs.AddLog(db, job.ID, fmt.Sprintf("Build Failed:\n%s", safe))

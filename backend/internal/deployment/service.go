@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/builder"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
@@ -14,8 +15,11 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/storage"
 )
 
-func ProcessDeployment(job database.Deployment, db *database.Queries) error {
+const deploymentTimeout = 20 * time.Minute
 
+func ProcessDeployment(job database.Deployment, db *database.Queries) error {
+	ctx, cancel := context.WithTimeout(context.Background(), deploymentTimeout)
+	defer cancel()
 	// -----------------TEMP FOLDER CREATION FOR THE DEPLOYMENT ----------------------
 	projectPath := "/tmp/project-arthur/" + job.ID.String()
 	defer func() {
@@ -56,14 +60,14 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 
 	// --------------------------CLONING THE REPO ---------------------------------------
 
-	err = builder.CloneRepo(project.RepoUrl, job, db, projectPath)
+	err = builder.CloneRepo(ctx, project.RepoUrl, job, db, projectPath)
 	if err != nil {
 		return err
 	}
 
 	// ------------------------- INSTALLING THE PROJECT DEPENDENCIES --------------------------------
 
-	err = builder.InstallDependencies(project.InstallCommand, env, envFile, job, db, projectPath)
+	err = builder.InstallDependencies(ctx, project.InstallCommand, env, envFile, job, db, projectPath)
 	if err != nil {
 		return err
 	}
@@ -73,7 +77,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 	if buildCmd == "" {
 		buildCmd = "npm run build"
 	}
-	err = builder.BuildProject(buildCmd, env, envFile, job, db, projectPath)
+	err = builder.BuildProject(ctx, buildCmd, env, envFile, job, db, projectPath)
 	if err != nil {
 		return err
 	}
@@ -97,12 +101,10 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 		"Uploading to S3",
 	)
 
-	err = storage.UploadDirectory(
-		job.ID.String(),
-		distPath,
-	)
+	err = storage.UploadDirectory(ctx, job.ID.String(), distPath)
 
 	if err != nil {
+		logs.AddLog(db, job.ID, "Upload failed: "+err.Error())
 		return err
 	}
 	// -----------------------------MARKING SUCCESS OF THE PROJECT DEPLOYMENT --------------------------------
