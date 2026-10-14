@@ -22,12 +22,13 @@ INSERT INTO projects (
     output_dir,
     github_repo_id,
     branch,
-    auto_deploy
+    auto_deploy,
+    slug
 )
 VALUES(
-    $1,$2,$3,$4,$5,$6,$7,$8,$9
+    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
 )
-RETURNING id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy
+RETURNING id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy, slug, active_deployment_id
 `
 
 type CreateProjectParams struct {
@@ -40,6 +41,7 @@ type CreateProjectParams struct {
 	GithubRepoID   sql.NullInt64
 	Branch         string
 	AutoDeploy     bool
+	Slug           string
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
@@ -53,6 +55,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.GithubRepoID,
 		arg.Branch,
 		arg.AutoDeploy,
+		arg.Slug,
 	)
 	var i Project
 	err := row.Scan(
@@ -68,12 +71,14 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.GithubRepoID,
 		&i.Branch,
 		&i.AutoDeploy,
+		&i.Slug,
+		&i.ActiveDeploymentID,
 	)
 	return i, err
 }
 
 const getProjectByGithubRepoID = `-- name: GetProjectByGithubRepoID :one
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy, slug, active_deployment_id
 FROM projects
 WHERE github_repo_id = $1
 AND auto_deploy = true
@@ -95,12 +100,14 @@ func (q *Queries) GetProjectByGithubRepoID(ctx context.Context, githubRepoID sql
 		&i.GithubRepoID,
 		&i.Branch,
 		&i.AutoDeploy,
+		&i.Slug,
+		&i.ActiveDeploymentID,
 	)
 	return i, err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy, slug, active_deployment_id FROM projects
 WHERE id = $1
 `
 
@@ -120,12 +127,14 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.GithubRepoID,
 		&i.Branch,
 		&i.AutoDeploy,
+		&i.Slug,
+		&i.ActiveDeploymentID,
 	)
 	return i, err
 }
 
 const getProjectByIDAndUser = `-- name: GetProjectByIDAndUser :one
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy, slug, active_deployment_id
 FROM projects
 WHERE id = $1
 AND user_id = $2
@@ -152,12 +161,41 @@ func (q *Queries) GetProjectByIDAndUser(ctx context.Context, arg GetProjectByIDA
 		&i.GithubRepoID,
 		&i.Branch,
 		&i.AutoDeploy,
+		&i.Slug,
+		&i.ActiveDeploymentID,
+	)
+	return i, err
+}
+
+const getProjectBySlug = `-- name: GetProjectBySlug :one
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy, slug, active_deployment_id FROM projects
+WHERE slug = $1
+`
+
+func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Project, error) {
+	row := q.db.QueryRowContext(ctx, getProjectBySlug, slug)
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.InstallCommand,
+		&i.BuildCommand,
+		&i.OutputDir,
+		&i.RepoUrl,
+		&i.UpdatedAt,
+		&i.GithubRepoID,
+		&i.Branch,
+		&i.AutoDeploy,
+		&i.Slug,
+		&i.ActiveDeploymentID,
 	)
 	return i, err
 }
 
 const getProjectsByUsers = `-- name: GetProjectsByUsers :many
-SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy FROM projects
+SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy, slug, active_deployment_id FROM projects
 WHERE user_id = $1
 ORDER BY created_at DESC
 `
@@ -184,6 +222,8 @@ func (q *Queries) GetProjectsByUsers(ctx context.Context, userID uuid.UUID) ([]P
 			&i.GithubRepoID,
 			&i.Branch,
 			&i.AutoDeploy,
+			&i.Slug,
+			&i.ActiveDeploymentID,
 		); err != nil {
 			return nil, err
 		}
@@ -196,4 +236,45 @@ func (q *Queries) GetProjectsByUsers(ctx context.Context, userID uuid.UUID) ([]P
 		return nil, err
 	}
 	return items, nil
+}
+
+const promoteDeployment = `-- name: PromoteDeployment :one
+UPDATE projects p
+SET active_deployment_id = d.id
+FROM deployments d
+WHERE p.id = $1
+AND p.user_id = $2
+AND d.id = $3
+AND d.project_id = p.id
+AND d.status = 'success'
+RETURNING p.id
+`
+
+type PromoteDeploymentParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+	ID_2   uuid.UUID
+}
+
+func (q *Queries) PromoteDeployment(ctx context.Context, arg PromoteDeploymentParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, promoteDeployment, arg.ID, arg.UserID, arg.ID_2)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const setActiveDeployment = `-- name: SetActiveDeployment :exec
+UPDATE projects
+SET active_deployment_id = $2
+WHERE id = $1
+`
+
+type SetActiveDeploymentParams struct {
+	ID                 uuid.UUID
+	ActiveDeploymentID uuid.NullUUID
+}
+
+func (q *Queries) SetActiveDeployment(ctx context.Context, arg SetActiveDeploymentParams) error {
+	_, err := q.db.ExecContext(ctx, setActiveDeployment, arg.ID, arg.ActiveDeploymentID)
+	return err
 }

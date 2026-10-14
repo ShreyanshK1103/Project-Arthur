@@ -77,26 +77,43 @@ func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) 
 	if params.AutoDeploy != nil {
 		autoDeploy = *params.AutoDeploy
 	}
-	project, err := cfg.DB.CreateProject(
-		r.Context(),
-		database.CreateProjectParams{
-			Name:           params.Name,
-			UserID:         userID,
-			RepoUrl:        params.RepoUrl,
-			InstallCommand: params.InstallCommand,
-			BuildCommand:   params.BuildCommand,
-			OutputDir:      params.OutputDir,
-			GithubRepoID:   githubRepoID,
-			Branch:         params.Branch,
-			AutoDeploy:     autoDeploy,
-		},
-	)
+	var project database.Project
+	var createErr error
 
-	if err != nil {
+	for attempt := 0; attempt < 5; attempt++ {
+		slug, err := newSlug(params.Name)
+		if err != nil {
+			respondWithError(w, 500, "Cannot generate project slug")
+			return
+		}
+
+		project, createErr = cfg.DB.CreateProject(
+			r.Context(),
+			database.CreateProjectParams{
+				Name:           params.Name,
+				UserID:         userID,
+				RepoUrl:        params.RepoUrl,
+				InstallCommand: params.InstallCommand,
+				BuildCommand:   params.BuildCommand,
+				OutputDir:      params.OutputDir,
+				GithubRepoID:   githubRepoID,
+				Branch:         params.Branch,
+				AutoDeploy:     autoDeploy,
+				Slug:           slug,
+			},
+		)
+
+		// retry only if the slug collided with an existing one
+		if createErr == nil || !isUniqueViolation(createErr) {
+			break
+		}
+	}
+
+	if createErr != nil {
 		respondWithError(
 			w,
 			500,
-			fmt.Sprintf("Cannot create project: %v", err),
+			fmt.Sprintf("Cannot create project: %v", createErr),
 		)
 		return
 	}
