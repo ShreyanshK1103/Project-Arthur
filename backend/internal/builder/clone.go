@@ -11,7 +11,7 @@ import (
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/logs"
 )
 
-func CloneRepo(ctx context.Context, repoUrl string, job database.Deployment, db *database.Queries, projectPath string) error {
+func CloneRepo(ctx context.Context, repoUrl string, branch string, job database.Deployment, db *database.Queries, projectPath string) error {
 
 	logs.AddLog(
 		db,
@@ -25,10 +25,14 @@ func CloneRepo(ctx context.Context, repoUrl string, job database.Deployment, db 
 		ctx,
 		"git",
 		"clone",
+		"--depth", "1", // latest commit only: much faster on big repos
+		"--single-branch",
+		"--branch", branch,
+		"--", // everything after this is a positional arg, never an option
 		repoUrl,
 		projectPath,
 	)
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_ALLOW_PROTOCOL=https")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
