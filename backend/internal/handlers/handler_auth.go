@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -406,6 +407,9 @@ func (cfg *Config) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *Config) HandlerLogout(w http.ResponseWriter, r *http.Request) {
 
+	// Remove cookies from browser
+	ClearAuthCookies(w)
+
 	cookie, err := r.Cookie(RefreshTokenCookie)
 
 	if err == nil && cookie.Value != "" {
@@ -420,17 +424,9 @@ func (cfg *Config) HandlerLogout(w http.ResponseWriter, r *http.Request) {
 		)
 
 		if err != nil {
-			respondWithError(
-				w,
-				http.StatusInternalServerError,
-				"logout failed",
-			)
-			return
+			log.Printf("logout: failed to delete refresh token: %v", err)
 		}
 	}
-
-	// Remove cookies from browser
-	ClearAuthCookies(w)
 
 	respondWithJSON(
 		w,
