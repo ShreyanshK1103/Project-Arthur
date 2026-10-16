@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -77,7 +76,7 @@ LIMIT 500
 
 type GetDeploymentLogsAfterParams struct {
 	DeploymentID uuid.UUID
-	Seq          sql.NullInt64
+	Seq          int64
 }
 
 func (q *Queries) GetDeploymentLogsAfter(ctx context.Context, arg GetDeploymentLogsAfterParams) ([]DeploymentLog, error) {
