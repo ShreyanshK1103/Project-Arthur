@@ -49,7 +49,16 @@ type Deployments struct {
 }
 
 type DeploymentLogsResponse struct {
-	Logs []string `json:"logs"`
+	Logs      []LogLine `json:"logs"`
+	Status    string    `json:"status"`
+	NextAfter int64     `json:"next_after"`
+	Done      bool      `json:"done"`
+}
+
+type LogLine struct {
+	Seq       int64     `json:"seq"`
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func DeploymentToResponse(d database.Deployment) Deployments {
@@ -66,16 +75,6 @@ func DeploymentToResponse(d database.Deployment) Deployments {
 		CreatedAt: d.CreatedAt,
 		UpdatedAt: d.UpdatedAt,
 	}
-}
-
-func DeploymentLogsToStrings(logs []database.DeploymentLog) []string {
-	result := []string{}
-
-	for _, l := range logs {
-		result = append(result, l.Log)
-	}
-
-	return result
 }
 
 func ProjectToResponse(p database.Project) Projects {
@@ -143,6 +142,19 @@ func DeploymentForProjectToResponse(deployments []database.Deployment, p databas
 		resp.ProjectURL = projectURL
 		resp.IsActive = &active
 		result = append(result, resp)
+	}
+
+	return result
+}
+func DeploymentLogsToLines(logs []database.DeploymentLog) []LogLine {
+	result := []LogLine{}
+
+	for _, l := range logs {
+		result = append(result, LogLine{
+			Seq:       l.Seq,
+			Message:   l.Log,
+			CreatedAt: l.CreatedAt,
+		})
 	}
 
 	return result

@@ -10,3 +10,11 @@ SELECT *
 FROM deployment_logs
 WHERE deployment_id = $1
 ORDER BY created_at ASC;
+
+-- name: GetDeploymentLogsAfter :many
+SELECT *
+FROM deployment_logs
+WHERE deployment_id = $1
+AND seq > $2
+ORDER BY seq ASC
+LIMIT 500;

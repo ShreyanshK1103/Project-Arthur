@@ -25,6 +25,7 @@ type DeploymentLog struct {
 	DeploymentID uuid.UUID
 	Log          string
 	CreatedAt    time.Time
+	Seq          int64
 }
 
 type OauthAccount struct {

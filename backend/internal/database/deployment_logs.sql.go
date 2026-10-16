@@ -30,7 +30,7 @@ func (q *Queries) CreateDeploymentLog(ctx context.Context, arg CreateDeploymentL
 }
 
 const getDeploymentLogs = `-- name: GetDeploymentLogs :many
-SELECT id, deployment_id, log, created_at
+SELECT id, deployment_id, log, created_at, seq
 FROM deployment_logs
 WHERE deployment_id = $1
 ORDER BY created_at ASC
@@ -50,6 +50,50 @@ func (q *Queries) GetDeploymentLogs(ctx context.Context, deploymentID uuid.UUID)
 			&i.DeploymentID,
 			&i.Log,
 			&i.CreatedAt,
+			&i.Seq,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDeploymentLogsAfter = `-- name: GetDeploymentLogsAfter :many
+SELECT id, deployment_id, log, created_at, seq
+FROM deployment_logs
+WHERE deployment_id = $1
+AND seq > $2
+ORDER BY seq ASC
+LIMIT 500
+`
+
+type GetDeploymentLogsAfterParams struct {
+	DeploymentID uuid.UUID
+	Seq          int64
+}
+
+func (q *Queries) GetDeploymentLogsAfter(ctx context.Context, arg GetDeploymentLogsAfterParams) ([]DeploymentLog, error) {
+	rows, err := q.db.QueryContext(ctx, getDeploymentLogsAfter, arg.DeploymentID, arg.Seq)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeploymentLog
+	for rows.Next() {
+		var i DeploymentLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeploymentID,
+			&i.Log,
+			&i.CreatedAt,
+			&i.Seq,
 		); err != nil {
 			return nil, err
 		}
