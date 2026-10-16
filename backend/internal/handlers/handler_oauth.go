@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/config"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/database"
 	"github.com/ShreyanshK1103/Project-Arthur/backend/internal/oauth"
 	githubapi "github.com/google/go-github/v69/github"
@@ -268,10 +269,5 @@ func (cfg *Config) HandlerGithubCallback(w http.ResponseWriter, r *http.Request)
 		response.RefreshToken,
 	)
 
-	http.Redirect(
-		w,
-		r,
-		"http://localhost:5173/",
-		http.StatusTemporaryRedirect,
-	)
+	http.Redirect(w, r, config.FrontendURL()+"/", http.StatusSeeOther)
 }
