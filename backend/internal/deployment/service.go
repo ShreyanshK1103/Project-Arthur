@@ -62,7 +62,7 @@ func ProcessDeployment(job database.Deployment, db *database.Queries) error {
 
 	// --------------------------CLONING THE REPO ---------------------------------------
 
-	err = builder.CloneRepo(ctx, project.RepoUrl, job, db, projectPath)
+	err = builder.CloneRepo(ctx, project.RepoUrl, project.Branch, job, db, projectPath)
 	if err != nil {
 		return err
 	}

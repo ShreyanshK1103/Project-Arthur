@@ -81,6 +81,11 @@ func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) 
 	var project database.Project
 	var createErr error
 
+	if !validRepoURL(params.RepoUrl) {
+		respondWithError(w, 400, "repo_url must be a public https URL")
+		return
+	}
+
 	for attempt := 0; attempt < 5; attempt++ {
 		slug, err := newSlug(params.Name)
 		if err != nil {
