@@ -77,6 +77,22 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 	return i, err
 }
 
+const deleteProjectByIDAndUser = `-- name: DeleteProjectByIDAndUser :exec
+DELETE FROM projects
+WHERE id = $1
+AND user_id = $2
+`
+
+type DeleteProjectByIDAndUserParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) DeleteProjectByIDAndUser(ctx context.Context, arg DeleteProjectByIDAndUserParams) error {
+	_, err := q.db.ExecContext(ctx, deleteProjectByIDAndUser, arg.ID, arg.UserID)
+	return err
+}
+
 const getProjectByGithubRepoID = `-- name: GetProjectByGithubRepoID :one
 SELECT id, name, user_id, created_at, install_command, build_command, output_dir, repo_url, updated_at, github_repo_id, branch, auto_deploy, slug, active_deployment_id
 FROM projects
