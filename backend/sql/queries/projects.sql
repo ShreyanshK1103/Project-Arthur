@@ -56,3 +56,8 @@ AND d.id = $3
 AND d.project_id = p.id
 AND d.status = 'success'
 RETURNING p.id;
+
+-- name: DeleteProjectByIDAndUser :exec
+DELETE FROM projects
+WHERE id = $1
+AND user_id = $2;

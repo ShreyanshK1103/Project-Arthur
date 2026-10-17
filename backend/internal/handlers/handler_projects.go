@@ -14,6 +14,107 @@ import (
 	"github.com/google/uuid"
 )
 
+// GET /v1/projects — list projects owned by the current user
+func (cfg *Config) HandlerListProjects(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	projects, err := cfg.DB.GetProjectsByUsers(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to list projects")
+		return
+	}
+
+	resp := make([]models.Projects, 0, len(projects))
+	for _, p := range projects {
+		resp = append(resp, models.ProjectToResponse(p))
+	}
+
+	respondWithJSON(w, http.StatusOK, resp)
+}
+
+// GET /v1/projects/{id} — get a single project (ownership required)
+func (cfg *Config) HandlerGetProject(w http.ResponseWriter, r *http.Request) {
+	projectID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid project id")
+		return
+	}
+
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	project, err := cfg.DB.GetProjectByIDAndUser(
+		r.Context(),
+		database.GetProjectByIDAndUserParams{
+			ID:     projectID,
+			UserID: userID,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "project not found")
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Failed to load project")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, models.ProjectToResponse(project))
+}
+
+// DELETE /v1/projects/{id} — delete a project (ownership required)
+func (cfg *Config) HandlerDeleteProject(w http.ResponseWriter, r *http.Request) {
+	projectID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid project id")
+		return
+	}
+
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Confirm ownership first so we can return 404 vs silent no-op
+	_, err = cfg.DB.GetProjectByIDAndUser(
+		r.Context(),
+		database.GetProjectByIDAndUserParams{
+			ID:     projectID,
+			UserID: userID,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "project not found")
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Failed to load project")
+		return
+	}
+
+	err = cfg.DB.DeleteProjectByIDAndUser(
+		r.Context(),
+		database.DeleteProjectByIDAndUserParams{
+			ID:     projectID,
+			UserID: userID,
+		},
+	)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to delete project")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "project deleted"})
+}
+
 func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Name           string `json:"name"`

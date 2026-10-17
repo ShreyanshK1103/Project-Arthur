@@ -123,12 +123,19 @@ func DeploymentsToResponse(deployments []database.Deployment) []Deployments {
 }
 
 func UserToResponse(u database.User) User {
+	var avatar *string
+	if u.AvatarUrl.Valid && u.AvatarUrl.String != "" {
+		avatar = &u.AvatarUrl.String
+	}
+
 	return User{
-		ID:        u.ID,
-		Name:      u.Name,
-		Email:     u.Email,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:            u.ID,
+		CreatedAt:     u.CreatedAt,
+		UpdatedAt:     u.UpdatedAt,
+		Name:          u.Name,
+		Email:         u.Email,
+		AvatarURL:     avatar,
+		EmailVerified: u.EmailVerified,
 	}
 }
 
