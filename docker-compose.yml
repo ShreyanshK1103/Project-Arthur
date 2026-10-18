@@ -1,0 +1,104 @@
+# Local development stack:  make up
+# Services: db (Postgres) -> migrate (goose, runs once) -> api, worker, frontend
+
+name: arthur
+
+x-db-url: &db-url postgres://arthur:arthur@db:5432/arthur?sslmode=disable
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: arthur
+      POSTGRES_PASSWORD: arthur
+      POSTGRES_DB: arthur
+    ports:
+      # 5433 on the host so it never clashes with a Postgres you already run on 5432
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arthur -d arthur"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: ./backend
+      target: migrate
+    environment:
+      DB_URL: *db-url
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ./backend
+      target: api
+    env_file: ./backend/.env
+    environment:
+      # these override whatever is in backend/.env, because inside Docker the
+      # database host is "db", not "localhost"
+      DB_URL: *db-url
+      PORT: "8080"
+      FRONTEND_URL: http://localhost:5173
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/v1/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # The worker starts sandboxed build containers, so it talks to the host's Docker.
+  # Two things make that work:
+  #  1. the Docker socket is mounted in
+  #  2. /tmp/project-arthur is mounted at the SAME path as on the host, because the
+  #     worker passes that path to `docker run -v`, and the host daemon resolves it.
+  # It runs as your own uid/gid so build containers (which use the worker's uid)
+  # can write into the cloned project folder.
+  worker:
+    build:
+      context: ./backend
+      target: worker
+    env_file: ./backend/.env
+    environment:
+      DB_URL: *db-url
+      HOME: /tmp
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    group_add:
+      - "${DOCKER_GID:-999}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/project-arthur:/tmp/project-arthur
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      # the Vite dev server proxies /v1 to the API (keeps cookies same-origin)
+      VITE_PROXY_TARGET: http://api:8080
+      VITE_API_BASE: ""
+      VITE_SITE_SCHEME: http
+      VITE_SITE_BASE_DOMAIN: localhost:8080
+    volumes:
+      - ./frontend:/app          # live-reload on file changes
+      - /app/node_modules        # keep the container's own node_modules
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+
+volumes:
+  pgdata:

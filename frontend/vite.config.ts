@@ -17,7 +17,7 @@ export default defineConfig({
     proxy: {
       // Forward all /v1 calls to the Go backend so cookies stay same-origin.
       "/v1": {
-        target: "http://localhost:8080",
+        target: process.env.VITE_PROXY_TARGET || "http://localhost:8080",
         changeOrigin: true,
       },
     },
