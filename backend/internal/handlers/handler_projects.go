@@ -186,6 +186,9 @@ func (cfg *Config) HandlerCreateProject(w http.ResponseWriter, r *http.Request) 
 		respondWithError(w, 400, "repo_url must be a public https URL")
 		return
 	}
+		if !githubRepoID.Valid {
+		githubRepoID = resolveGithubRepoID(r.Context(), params.RepoUrl)
+	}
 
 	for attempt := 0; attempt < 5; attempt++ {
 		slug, err := newSlug(params.Name)
