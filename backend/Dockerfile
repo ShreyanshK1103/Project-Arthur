@@ -4,8 +4,8 @@
 FROM golang:1.26-alpine AS build
 WORKDIR /src
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -o /out/api ./cmd/api \
- && CGO_ENABLED=0 go build -trimpath -o /out/worker ./cmd/worker
+RUN CGO_ENABLED=0 go build -mod=mod -trimpath -o /out/api ./cmd/api \
+ && CGO_ENABLED=0 go build -mod=mod -trimpath -o /out/worker ./cmd/worker
 
 # ---------- goose, for database migrations ----------
 FROM golang:1.26-alpine AS goose
