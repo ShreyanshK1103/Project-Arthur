@@ -1,0 +1,22 @@
+arthur-demo.duckdns.org, *.arthur-demo.duckdns.org {
+	tls {
+		dns duckdns {env.DUCKDNS_TOKEN}
+	}
+
+	@dashboard host arthur-demo.duckdns.org
+	handle @dashboard {
+		handle /v1/* {
+			reverse_proxy api:8080
+		}
+		handle {
+			root * /srv/dashboard
+			try_files {path} /index.html
+			file_server
+		}
+	}
+
+	# <slug>.arthur-demo.duckdns.org -> deployed sites, served by the API from S3
+	handle {
+		reverse_proxy api:8080
+	}
+}

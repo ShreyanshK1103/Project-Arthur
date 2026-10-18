@@ -1,0 +1,24 @@
+services:
+  api:
+    environment:
+      FRONTEND_URL: https://arthur-demo.duckdns.org
+    ports: !override
+      - "127.0.0.1:8080:8080"
+
+  caddy:
+    build: ./caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./dashboard:/srv/dashboard:ro
+      - caddy_data:/data
+    depends_on:
+      - api
+
+volumes:
+  caddy_data:
